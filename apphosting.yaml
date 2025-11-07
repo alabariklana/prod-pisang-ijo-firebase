@@ -1,0 +1,95 @@
+runConfig:
+  runtime: nodejs18
+  
+env:
+  # Firebase Configuration - akan diset melalui Firebase Console
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    availability:
+      - BUILD
+      - RUNTIME
+      
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    availability:
+      - BUILD
+      - RUNTIME
+      
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    availability:
+      - BUILD
+      - RUNTIME
+      
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    availability:
+      - BUILD
+      - RUNTIME
+      
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    availability:
+      - BUILD
+      - RUNTIME
+      
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    availability:
+      - BUILD
+      - RUNTIME
+      
+  # Optional Firebase Analytics
+  - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+    availability:
+      - BUILD
+      - RUNTIME
+      
+  # Database Configuration
+  - variable: MONGO_URL
+    availability:
+      - RUNTIME
+      
+  # Email Service Configuration
+  - variable: BREVO_API_KEY
+    availability:
+      - RUNTIME
+      
+  # Google Cloud Storage Configuration
+  - variable: GCS_SERVICE_ACCOUNT_KEY_BASE64
+    availability:
+      - RUNTIME
+      
+  - variable: GCS_PROJECT_ID
+    availability:
+      - RUNTIME
+      
+  - variable: GCS_BUCKET_NAME
+    availability:
+      - RUNTIME
+      
+  - variable: USE_GCS
+    availability:
+      - RUNTIME
+      
+  - variable: GCS_PUBLIC_READ
+    availability:
+      - RUNTIME
+      
+  - variable: ALLOW_LOCAL_FALLBACK
+    availability:
+      - RUNTIME
+      
+  # Optional Google Maps API
+  - variable: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+    availability:
+      - BUILD
+      - RUNTIME
+      
+  # Optional Facebook Integration
+  - variable: NEXT_PUBLIC_FACEBOOK_APP_ID
+    availability:
+      - BUILD
+      - RUNTIME
+
+# Build configuration
+buildConfig:
+  runtime: nodejs18
+  commands:
+    - npm ci
+    - npm run build
+  outputDir: .next

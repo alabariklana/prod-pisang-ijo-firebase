@@ -1,0 +1,76 @@
+# Firebase ignore file - exclude these files from deployment
+
+# Node modules
+node_modules/
+
+# Development files
+.env*
+.env.local
+.env.development
+.env.test
+
+# Build files
+.next/
+out/
+build/
+
+# Source files (not needed for production)
+src/
+components/
+lib/
+contexts/
+scripts/
+public/uploads/
+
+# Config files not needed in production
+*.config.js
+*.config.mjs
+*.config.ts
+jsconfig.json
+tsconfig.json
+tailwind.config.*
+postcss.config.*
+eslint.config.*
+
+# Documentation
+README.md
+DEV_SETUP.md
+DEPLOYMENT.md
+*.md
+
+# Git files
+.git/
+.gitignore
+
+# IDE files
+.vscode/
+.idea/
+
+# Service account keys (should be set via environment variables)
+*.json
+!package.json
+!firebase.json
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+__tests__/
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+
+# Development tools
+.eslintrc*
+.prettierrc*
+.babelrc*
+
+# Temporary files
+tmp/
+temp/
