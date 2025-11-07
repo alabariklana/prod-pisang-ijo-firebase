@@ -56,33 +56,38 @@ Pilih:
 - ✅ App Hosting
 - ✅ Project: `certain-haiku-475408-f6`
 
-### Step 3: Set Environment Variables di Firebase
-```bash
-# Set semua required environment variables
-firebase apphosting:secrets:set MONGO_URL
-firebase apphosting:secrets:set BREVO_API_KEY
-firebase apphosting:secrets:set GCS_SERVICE_ACCOUNT_KEY_BASE64
+### Step 3: Set Environment Variables di Firebase Console
 
-# Set public environment variables
-firebase apphosting:env:set NEXT_PUBLIC_FIREBASE_API_KEY="your-api-key"
-firebase apphosting:env:set NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="your-auth-domain"
-firebase apphosting:env:set NEXT_PUBLIC_FIREBASE_PROJECT_ID="certain-haiku-475408-f6"
-firebase apphosting:env:set NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="your-storage-bucket"
-firebase apphosting:env:set NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="your-sender-id"
-firebase apphosting:env:set NEXT_PUBLIC_FIREBASE_APP_ID="your-app-id"
+**PENTING:** Karena format baru App Hosting, environment variables harus di-set melalui Firebase Console, bukan CLI.
 
-# Optional variables
-firebase apphosting:env:set NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID="your-measurement-id"
-firebase apphosting:env:set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY="your-maps-api-key"
-firebase apphosting:env:set NEXT_PUBLIC_FACEBOOK_APP_ID="your-facebook-app-id"
+1. **Buka Firebase Console**: https://console.firebase.google.com/
+2. **Pilih Project**: certain-haiku-475408-f6
+3. **Buka App Hosting** di sidebar kiri
+4. **Pilih aplikasi Anda** atau create new app
+5. **Buka tab "Environment"** atau "Configuration"
 
-# GCS Configuration
-firebase apphosting:env:set GCS_PROJECT_ID="certain-haiku-475408-f6"
-firebase apphosting:env:set GCS_BUCKET_NAME="pisang-ijo-assets"
-firebase apphosting:env:set USE_GCS="true"
-firebase apphosting:env:set GCS_PUBLIC_READ="true"
-firebase apphosting:env:set ALLOW_LOCAL_FALLBACK="false"
+**Set Environment Variables berikut:**
+
+#### Public Variables (Environment Variables):
 ```
+NEXT_PUBLIC_FIREBASE_API_KEY = your-firebase-api-key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN = your-project-id.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET = your-project-id.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID = your-messaging-sender-id
+NEXT_PUBLIC_FIREBASE_APP_ID = your-app-id
+NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID = your-measurement-id (optional)
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY = your-maps-api-key (optional)
+NEXT_PUBLIC_FACEBOOK_APP_ID = your-facebook-app-id (optional)
+```
+
+#### Secret Variables (Secrets):
+```
+MONGO_URL = mongodb+srv://username:password@cluster.mongodb.net/database
+BREVO_API_KEY = your-brevo-api-key
+GCS_SERVICE_ACCOUNT_KEY_BASE64 = your-base64-encoded-service-account-key
+```
+
+**Note:** GCS configuration sudah hard-coded dalam apphosting.yaml karena sudah diketahui nilainya.
 
 ### Step 4: Connect Repository ke Firebase App Hosting
 1. Push code ke GitHub repository
