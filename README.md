@@ -102,3 +102,4 @@ Lihat [DEV_SETUP.md](./DEV_SETUP.md) untuk troubleshooting lengkap.
 - File `.env.local` tidak di-commit untuk keamanan
 - Tidak ada konfigurasi deployment (pure development project)
 # prod-pisang-ijo-firebase
+# Updated for GSC verification
