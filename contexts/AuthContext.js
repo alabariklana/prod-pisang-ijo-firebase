@@ -18,6 +18,7 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Daftar email yang diizinkan (semua lowercase)
   const allowedEmails = new Set([
@@ -47,6 +48,15 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
+    // Set timeout untuk loading state (max 10 detik)
+    const loadingTimeout = setTimeout(() => {
+      if (loading) {
+        console.warn('⚠️ Auth loading timeout - forcing to false');
+        setLoading(false);
+        setError('Authentication timed out. Please refresh the page.');
+      }
+    }, 10000);
+
     // Check for redirect result first
     getRedirectResult(auth)
       .then((result) => {
@@ -65,11 +75,13 @@ export const AuthProvider = ({ children }) => {
       })
       .catch((error) => {
         console.error('❌ Error saat ambil redirect result:', error);
-        alert('Error saat login: ' + error.message);
+        setError('Error during authentication: ' + error.message);
       });
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       console.log('🔔 onAuthStateChanged triggered');
+      clearTimeout(loadingTimeout); // Clear timeout since auth state changed
+      
       if (user) {
         console.log('👤 User detected:', user.email);
         // Jika email tidak diizinkan, langsung sign out dan jangan set user
@@ -82,6 +94,7 @@ export const AuthProvider = ({ children }) => {
         }
         console.log('✅ Setting authorized user to state');
         setUser(user);
+        setError(null); // Clear any previous errors
       } else {
         console.log('ℹ️ User = null (logged out or not authenticated)');
         setUser(null);
@@ -89,7 +102,10 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      clearTimeout(loadingTimeout);
+    };
   }, []);
 
   const signInWithGoogle = async (useRedirect = true) => {
@@ -150,7 +166,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInWithEmailPassword, signOut }}>
+    <AuthContext.Provider value={{ user, loading, error, signInWithGoogle, signInWithEmailPassword, signOut }}>
       {children}
     </AuthContext.Provider>
   );

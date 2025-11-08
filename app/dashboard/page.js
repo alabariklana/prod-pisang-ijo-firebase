@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 
 export default function DashboardLoginPage() {
-  const { user, loading, signInWithGoogle, signInWithEmailPassword } = useAuth();
+  const { user, loading, error, signInWithGoogle, signInWithEmailPassword } = useAuth();
   const router = useRouter();
   const [loginMethod, setLoginMethod] = useState('google'); // 'google' or 'email'
   const [email, setEmail] = useState('');
@@ -99,11 +99,35 @@ export default function DashboardLoginPage() {
   if (loading || isRedirecting) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100">
-        <div className="text-center">
+        <div className="text-center max-w-md mx-auto p-6">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">
+          <p className="text-gray-600 mb-4">
             {isRedirecting ? 'Mengarahkan ke Google...' : 'Loading...'}
           </p>
+          
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mt-4">
+              <p className="text-red-600 text-sm font-medium mb-2">Authentication Error:</p>
+              <p className="text-red-700 text-sm">{error}</p>
+              
+              {error.includes('unauthorized-domain') && (
+                <div className="mt-3 text-xs text-red-600">
+                  <p className="font-medium">Action Required:</p>
+                  <p>Please add this domain to Firebase Console:</p>
+                  <code className="bg-red-100 px-2 py-1 rounded text-xs block mt-1 break-all">
+                    prod-pisang-ijo-firebase--pisang-ijo-evi.asia-southeast1.hosted.app
+                  </code>
+                </div>
+              )}
+              
+              <button 
+                onClick={() => window.location.reload()} 
+                className="mt-3 text-sm text-red-600 hover:text-red-800 underline"
+              >
+                Refresh Page
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );
