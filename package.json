@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "check-env": "node scripts/check-env.js",
+    "test-auth": "node scripts/test-auth.js",
     "test-gcs": "node scripts/test-gcs.js",
     "encode-key": "node scripts/encode-service-key.js"
   },
