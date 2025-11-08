@@ -9,6 +9,7 @@
     "lint": "eslint",
     "check-env": "node scripts/check-env.js",
     "test-auth": "node scripts/test-auth.js",
+    "debug-auth": "node scripts/debug-auth.js",
     "add-auth-domain": "node scripts/add-auth-domain.js",
     "test-gcs": "node scripts/test-gcs.js",
     "encode-key": "node scripts/encode-service-key.js"

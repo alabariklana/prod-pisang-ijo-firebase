@@ -30,6 +30,7 @@ export const AuthProvider = ({ children }) => {
   ]);
 
   const isAllowed = (email) => {
+    console.log('🔍 Checking email access:', email);
     if (!email) {
       console.log('⚠️ No email provided to isAllowed check');
       return false;
@@ -37,11 +38,18 @@ export const AuthProvider = ({ children }) => {
     const normalizedEmail = email.toLowerCase().trim();
     const allowed = allowedEmails.has(normalizedEmail);
     
+    console.log('📋 Email whitelist check:');
+    console.log('  - Input email:', email);
+    console.log('  - Normalized email:', normalizedEmail);
+    console.log('  - Is allowed:', allowed);
+    console.log('  - Allowed emails:', Array.from(allowedEmails));
+    
     if (!allowed) {
-      console.warn('❌ Email not in allowed list:', normalizedEmail);
-      console.log('Allowed emails:', Array.from(allowedEmails));
+      console.warn('❌ UNAUTHORIZED: Email not in allowed list:', normalizedEmail);
+      // Show user-friendly alert
+      alert(`❌ Email tidak memiliki akses admin: ${email}\n\nEmail yang diizinkan:\n- alaunasbariklana@gmail.com\n- zelvidiana@gmail.com\n- pisangijo@cateringsamarasa.com\n- admin@pisangijo.com\n- admin@cateringsamarasa.com`);
     } else {
-      console.log('✅ Email is allowed:', normalizedEmail);
+      console.log('✅ Email is AUTHORIZED:', normalizedEmail);
     }
     
     return allowed;
@@ -60,46 +68,70 @@ export const AuthProvider = ({ children }) => {
     // Check for redirect result first
     getRedirectResult(auth)
       .then((result) => {
+        console.log('🔄 Checking redirect result...');
         if (result && result.user) {
-          console.log('✅ User kembali dari Google:', result.user.email);
+          console.log('✅ User returned from Google:', result.user.email);
+          console.log('📊 User details:', {
+            email: result.user.email,
+            displayName: result.user.displayName,
+            uid: result.user.uid,
+            emailVerified: result.user.emailVerified
+          });
+          
           if (!isAllowed(result.user.email)) {
-            console.error('❌ Email tidak diizinkan:', result.user.email);
-            alert(`Email ${result.user.email} tidak memiliki akses admin.\n\nEmail yang diizinkan:\n- alaunasbariklana@gmail.com\n- zelvidiana@gmail.com\n- pisangijo@cateringsamarasa.com\n- admin@pisangijo.com\n- admin@cateringsamarasa.com`);
+            console.error('❌ REDIRECTING TO SIGN OUT: Email tidak diizinkan:', result.user.email);
             firebaseSignOut(auth).catch((e) => console.error('Error signing out:', e));
+            setError(`Unauthorized email: ${result.user.email}`);
           } else {
             console.log('✅ Email diizinkan, login berhasil!');
+            console.log('🎉 Redirecting to dashboard...');
           }
         } else {
-          console.log('ℹ️ Tidak ada redirect result (ini normal saat pertama load)');
+          console.log('ℹ️ No redirect result (normal pada first load)');
         }
       })
       .catch((error) => {
-        console.error('❌ Error saat ambil redirect result:', error);
-        setError('Error during authentication: ' + error.message);
+        console.error('❌ Error getting redirect result:', error);
+        console.error('Error details:', {
+          code: error.code,
+          message: error.message,
+          name: error.name
+        });
+        setError('Authentication error: ' + error.message);
       });
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      console.log('🔔 onAuthStateChanged triggered');
+      console.log('🔔 onAuthStateChanged triggered at', new Date().toISOString());
       clearTimeout(loadingTimeout); // Clear timeout since auth state changed
       
       if (user) {
-        console.log('👤 User detected:', user.email);
-        // Jika email tidak diizinkan, langsung sign out dan jangan set user
-        if (!isAllowed(user.email)) {
-          console.error('❌ UNAUTHORIZED: Signing out user:', user.email);
+        console.log('👤 User detected in onAuthStateChanged:');
+        console.log('  - Email:', user.email);
+        console.log('  - UID:', user.uid);
+        console.log('  - Display Name:', user.displayName);
+        console.log('  - Email Verified:', user.emailVerified);
+        
+        // Check if email is allowed
+        const emailAllowed = isAllowed(user.email);
+        if (!emailAllowed) {
+          console.error('❌ UNAUTHORIZED in onAuthStateChanged: Signing out user:', user.email);
           firebaseSignOut(auth).catch((e) => console.error('Error signing out:', e));
           setUser(null);
           setLoading(false);
+          setError(`Unauthorized access: ${user.email}`);
           return;
         }
-        console.log('✅ Setting authorized user to state');
+        
+        console.log('✅ Setting AUTHORIZED user to state');
+        console.log('🏠 User should now be redirected to dashboard');
         setUser(user);
         setError(null); // Clear any previous errors
       } else {
-        console.log('ℹ️ User = null (logged out or not authenticated)');
+        console.log('ℹ️ User = null in onAuthStateChanged (logged out or not authenticated)');
         setUser(null);
       }
       setLoading(false);
+      console.log('📊 Auth state updated - loading:', false, 'user:', user?.email || 'null');
     });
 
     return () => {
