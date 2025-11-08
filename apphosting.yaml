@@ -4,13 +4,13 @@ runConfig:
 env:
   # Firebase Configuration (Public)
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
-    value: "${NEXT_PUBLIC_FIREBASE_API_KEY}"
+    value: "AIzaSyADiSIc9OxSBKZVkziGQWrWlO6hWvSnrbg"
     availability:
       - BUILD
       - RUNTIME
       
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-    value: "${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}"
+    value: "pisang-ijo-evi.firebaseapp.com"
     availability:
       - BUILD
       - RUNTIME
@@ -22,19 +22,19 @@ env:
       - RUNTIME
       
   - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-    value: "${NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}"
+    value: "pisang-ijo-evi.firebasestorage.app"
     availability:
       - BUILD
       - RUNTIME
       
   - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
-    value: "${NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}"
+    value: "93489526771"
     availability:
       - BUILD
       - RUNTIME
       
   - variable: NEXT_PUBLIC_FIREBASE_APP_ID
-    value: "${NEXT_PUBLIC_FIREBASE_APP_ID}"
+    value: "1:93489526771:web:067f6eadd6150802c90486"
     availability:
       - BUILD
       - RUNTIME
@@ -70,7 +70,7 @@ env:
       - RUNTIME
       
   - variable: GCS_BUCKET_NAME
-    value: "pisang-ijo-assets"
+    value: "pisang-ijo-evi-assets"
     availability:
       - RUNTIME
       
