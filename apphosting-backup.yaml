@@ -2,7 +2,7 @@ runConfig:
   runtime: nodejs18
   
 env:
-  # Firebase Configuration (Required for build)
+  # Firebase Configuration (Public)
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
     value: "AIzaSyADiSIc9OxSBKZVkziGQWrWlO6hWvSnrbg"
     availability:
@@ -39,19 +39,26 @@ env:
       - BUILD
       - RUNTIME
       
-  # Database Configuration - Available at build and runtime
-  - variable: MONGO_URL
-    secret: MONGO_URL
+  # Optional Firebase Analytics
+  - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+    value: "${NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID}"
     availability:
       - BUILD
       - RUNTIME
       
-  # Additional required environment variables for build
+  # Database Configuration (Secret)
+  - variable: MONGO_URL
+    secret: MONGO_URL
+    availability:
+      - RUNTIME
+      
+  # Email Service Configuration (Secret)
   - variable: BREVO_API_KEY
     secret: BREVO_API_KEY
     availability:
       - RUNTIME
       
+  # Google Cloud Storage Configuration
   - variable: GCS_SERVICE_ACCOUNT_KEY_BASE64
     secret: GCS_SERVICE_ACCOUNT_KEY_BASE64
     availability:
@@ -60,23 +67,38 @@ env:
   - variable: GCS_PROJECT_ID
     value: "pisang-ijo-evi"
     availability:
-      - BUILD
       - RUNTIME
       
   - variable: GCS_BUCKET_NAME
     value: "pisang-ijo-evi-assets"
     availability:
-      - BUILD
       - RUNTIME
       
   - variable: USE_GCS
     value: "true"
     availability:
+      - RUNTIME
+      
+  - variable: GCS_PUBLIC_READ
+    value: "true"
+    availability:
+      - RUNTIME
+      
+  - variable: ALLOW_LOCAL_FALLBACK
+    value: "false"
+    availability:
+      - RUNTIME
+      
+  # Optional Google Maps API
+  - variable: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+    value: "${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}"
+    availability:
       - BUILD
       - RUNTIME
       
-  - variable: NEXT_PUBLIC_APP_URL
-    value: "https://prod-pisang-ijo-firebase--pisang-ijo-evi.asia-southeast1.hosted.app"
+  # Optional Facebook Integration
+  - variable: NEXT_PUBLIC_FACEBOOK_APP_ID
+    value: "${NEXT_PUBLIC_FACEBOOK_APP_ID}"
     availability:
       - BUILD
       - RUNTIME

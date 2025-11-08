@@ -141,8 +141,5 @@ export async function POST(req) {
   }
 }
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+// Note: bodyParser config is not needed in App Router
+// File uploads are handled directly in the route handler
