@@ -22,7 +22,7 @@ export const metadata = {
     icon: '/favicon.ico',
   },
   verification: {
-    google: '78782e9b4cd5c744', // Google Search Console verification
+    google: 'kO0UqVWbbs3EBR8lCNzPoeWGhu3DQ7GMQYM8WOYOpfU', // Google Search Console verification untuk pisangijoevi.web.id
   },
 }
 
