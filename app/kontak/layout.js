@@ -1,17 +1,18 @@
 export const metadata = {
-  title: 'Kontak Kami - Pisang Ijo Evi | Hubungi & Lokasi',
-  description: 'Hubungi Pisang Ijo Evi untuk informasi pemesanan Es Pisang Ijo khas Makassar. Temukan lokasi, nomor telepon, dan email kami.',
+  title: 'Kontak Kami - Pisang Ijo Evi | Hubungi & Lokasi Makassar',
+  description: 'Hubungi Pisang Ijo Evi untuk informasi dan pemesanan Es Pisang Ijo khas Makassar. Dapatkan alamat lengkap, nomor WhatsApp, dan cara mudah menghubungi kami.',
   keywords: [
     'kontak pisang ijo evi',
     'alamat pisang ijo makassar',
-    'telepon pisang ijo evi',
+    'whatsapp pisang ijo evi',
     'lokasi dessert makassar',
     'hubungi pisang ijo evi',
-    'pesan pisang ijo makassar'
+    'telepon pisang ijo makassar',
+    'customer service dessert'
   ],
   openGraph: {
-    title: 'Kontak Kami - Pisang Ijo Evi',
-    description: 'Hubungi kami untuk informasi dan pemesanan Es Pisang Ijo khas Makassar.',
+    title: 'Kontak Kami - Pisang Ijo Evi | Lokasi Makassar',
+    description: 'Hubungi kami untuk informasi dan pemesanan Es Pisang Ijo khas Makassar. Lokasi mudah dijangkau di Makassar.',
     url: 'https://pisangijoevi.web.id/kontak',
     type: 'website',
     images: ['/og-image.jpg'],

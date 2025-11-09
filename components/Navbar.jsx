@@ -34,6 +34,9 @@ export default function Navbar() {
             <Link href="/menu" className="transition hover:opacity-80" style={{ fontFamily: 'var(--font-poppins), sans-serif', fontWeight: 500, color: '#214929' }}>
               Menu
             </Link>
+            <Link href="/cara-pemesanan" className="transition hover:opacity-80" style={{ fontFamily: 'var(--font-poppins), sans-serif', fontWeight: 500, color: '#214929' }}>
+              Cara Pemesanan
+            </Link>
             <Link href="/blog" className="transition hover:opacity-80" style={{ fontFamily: 'var(--font-poppins), sans-serif', fontWeight: 500, color: '#214929' }}>
               Blog
             </Link>
@@ -102,6 +105,14 @@ export default function Navbar() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Menu
+              </Link>
+              <Link 
+                href="/cara-pemesanan" 
+                className="transition hover:opacity-80" 
+                style={{ fontFamily: 'var(--font-poppins), sans-serif', fontWeight: 500, color: '#214929' }} 
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Cara Pemesanan
               </Link>
               <Link 
                 href="/blog" 

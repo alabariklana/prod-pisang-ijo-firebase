@@ -4,23 +4,14 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ShoppingCart, MessageCircle, CreditCard, Package } from 'lucide-react';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 
 export default function CaraPemesananPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
       {/* Navbar */}
-      <nav className="bg-[#214929] text-white sticky top-0 z-50 shadow-lg">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="text-2xl font-bold font-playfair">
-            Pisang Ijo Evi
-          </Link>
-          <div className="flex gap-6">
-            <Link href="/" className="hover:text-[#D4AF37] transition">Home</Link>
-            <Link href="/menu" className="hover:text-[#D4AF37] transition">Menu</Link>
-            <Link href="/kontak" className="hover:text-[#D4AF37] transition">Kontak</Link>
-          </div>
-        </div>
-      </nav>
+      <Navbar />
 
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-[#214929] to-[#2d6b3a] text-white py-20">
@@ -192,13 +183,7 @@ export default function CaraPemesananPage() {
       </div>
 
       {/* Footer */}
-      <footer className="bg-[#214929] text-white py-8 mt-16">
-        <div className="container mx-auto px-4 text-center">
-          <p className="text-sm text-gray-300">
-            © 2025 Pisang Ijo Evi. All rights reserved.
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
