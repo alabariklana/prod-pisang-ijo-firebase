@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -10,6 +10,7 @@ export default function HeroSlider() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [textVisible, setTextVisible] = useState(true);
+  const [isPaused, setIsPaused] = useState(false);
 
   // Default slide jika belum ada data
   const defaultSlides = [
@@ -24,15 +25,71 @@ export default function HeroSlider() {
     }
   ];
 
+  // Auto-advance to next slide
+  const nextSlide = useCallback(() => {
+    if (slides.length <= 1) return;
+    
+    setTextVisible(false);
+    setTimeout(() => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+      setTextVisible(true);
+    }, 200);
+  }, [slides.length]);
+
+  // Manual next slide with pause
+  const nextSlideManual = useCallback(() => {
+    if (slides.length <= 1) return;
+    
+    // Pause auto-slide briefly when user manually navigates
+    setIsPaused(true);
+    setTimeout(() => setIsPaused(false), 8000); // Resume after 8 seconds
+    
+    nextSlide();
+  }, [nextSlide, slides.length]);
+
+  // Manual navigation functions
+  const prevSlide = useCallback(() => {
+    if (slides.length <= 1) return;
+    
+    // Pause auto-slide briefly when user manually navigates
+    setIsPaused(true);
+    setTimeout(() => setIsPaused(false), 8000); // Resume after 8 seconds
+    
+    setTextVisible(false);
+    setTimeout(() => {
+      setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+      setTextVisible(true);
+    }, 200);
+  }, [slides.length]);
+
+  const goToSlide = useCallback((index) => {
+    if (index === currentSlide || slides.length <= 1) return;
+    
+    // Pause auto-slide briefly when user manually navigates
+    setIsPaused(true);
+    setTimeout(() => setIsPaused(false), 8000); // Resume after 8 seconds
+    
+    setTextVisible(false);
+    setTimeout(() => {
+      setCurrentSlide(index);
+      setTextVisible(true);
+    }, 200);
+  }, [currentSlide, slides.length]);
+
   useEffect(() => {
     fetchSlides();
-    // Auto-slide interval
+  }, []);
+
+  // Auto-slide effect
+  useEffect(() => {
+    if (slides.length <= 1 || isPaused) return;
+    
     const interval = setInterval(() => {
       nextSlide();
     }, 5000); // Change slide every 5 seconds
 
     return () => clearInterval(interval);
-  }, []);
+  }, [nextSlide, slides.length, isPaused]);
 
   const fetchSlides = async () => {
     try {
@@ -55,35 +112,7 @@ export default function HeroSlider() {
     }
   };
 
-  const nextSlide = () => {
-    if (slides.length <= 1) return;
-    
-    setTextVisible(false);
-    setTimeout(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-      setTextVisible(true);
-    }, 200);
-  };
 
-  const prevSlide = () => {
-    if (slides.length <= 1) return;
-    
-    setTextVisible(false);
-    setTimeout(() => {
-      setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
-      setTextVisible(true);
-    }, 200);
-  };
-
-  const goToSlide = (index) => {
-    if (index === currentSlide || slides.length <= 1) return;
-    
-    setTextVisible(false);
-    setTimeout(() => {
-      setCurrentSlide(index);
-      setTextVisible(true);
-    }, 200);
-  };
 
   if (isLoading) {
     return (
@@ -99,14 +128,27 @@ export default function HeroSlider() {
   const currentSlideData = slides[currentSlide] || defaultSlides[0];
 
   return (
-    <section className="relative h-[500px] md:h-[600px] flex items-center justify-center overflow-hidden">
+    <section 
+      className="relative h-[500px] md:h-[600px] flex items-center justify-center overflow-hidden"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
       {/* Background */}
       <div 
         className="absolute inset-0 transition-all duration-1000 ease-in-out"
         style={{
-          background: currentSlideData.type === 'image' && currentSlideData.imageUrl
-            ? `linear-gradient(rgba(33, 73, 41, 0.6), rgba(33, 73, 41, 0.6)), url(${currentSlideData.imageUrl})`
-            : currentSlideData.background || 'linear-gradient(135deg, #214929 0%, #2a5f35 50%, #214929 100%)',
+          background: (() => {
+            // Handle image type slides
+            if (currentSlideData.type === 'image' && currentSlideData.imageUrl) {
+              return `linear-gradient(rgba(33, 73, 41, 0.6), rgba(33, 73, 41, 0.6)), url(${currentSlideData.imageUrl})`;
+            }
+            // Handle color type slides
+            if (currentSlideData.type === 'color' && currentSlideData.background) {
+              return currentSlideData.background;
+            }
+            // Default fallback
+            return 'linear-gradient(135deg, #214929 0%, #2a5f35 50%, #214929 100%)';
+          })(),
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
@@ -188,7 +230,7 @@ export default function HeroSlider() {
             <ChevronLeft className="w-6 h-6" />
           </button>
           <button
-            onClick={nextSlide}
+            onClick={nextSlideManual}
             className="absolute right-4 top-1/2 -translate-y-1/2 z-30 bg-black/30 hover:bg-black/50 text-white p-3 rounded-full transition-all duration-200 hover:scale-110"
             aria-label="Next slide"
           >

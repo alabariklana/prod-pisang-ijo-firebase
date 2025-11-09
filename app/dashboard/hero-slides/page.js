@@ -65,8 +65,10 @@ export default function HeroSlidesManagement() {
     setLoading(true);
 
     try {
+      console.log('Submitting form data:', formData);
       const url = editingSlide ? `/api/hero-slides/${editingSlide._id}` : '/api/hero-slides';
       const method = editingSlide ? 'PUT' : 'POST';
+      console.log('Request URL:', url, 'Method:', method);
 
       const response = await fetch(url, {
         method,
@@ -76,12 +78,17 @@ export default function HeroSlidesManagement() {
         body: JSON.stringify(formData),
       });
 
+      console.log('Response status:', response.status);
+
       if (response.ok) {
+        const result = await response.json();
+        console.log('Success response:', result);
         toast.success(editingSlide ? 'Slide updated successfully!' : 'Slide created successfully!');
         await fetchSlides();
         resetForm();
       } else {
         const error = await response.json();
+        console.error('Error response:', error);
         toast.error(error.error || 'Operation failed');
       }
     } catch (error) {

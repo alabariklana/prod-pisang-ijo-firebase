@@ -6,9 +6,13 @@ export async function PUT(request, { params }) {
   try {
     const { id } = params;
     const data = await request.json();
+    console.log('Received data for update:', data);
+    console.log('Slide ID:', id);
+    
     const { title, subtitle, type, background, imageUrl, isActive, order } = data;
 
     if (!ObjectId.isValid(id)) {
+      console.log('Invalid ObjectId:', id);
       return NextResponse.json(
         { success: false, error: 'Invalid slide ID' },
         { status: 400 }
@@ -17,28 +21,61 @@ export async function PUT(request, { params }) {
 
     const { db } = await connectToDatabase();
     
+    // Validate required fields
+    if (!title || !subtitle || !type) {
+      console.log('Missing required fields:', { title, subtitle, type });
+      return NextResponse.json(
+        { success: false, error: 'Title, subtitle, and type are required' },
+        { status: 400 }
+      );
+    }
+
+    // Prepare update data
     const updateData = {
-      title,
-      subtitle,
+      title: title.trim(),
+      subtitle: subtitle.trim(),
       type,
-      background: type === 'color' ? background : null,
-      imageUrl: type === 'image' ? imageUrl : null,
-      isActive,
-      order,
+      isActive: isActive !== undefined ? isActive : true,
       updatedAt: new Date()
     };
 
-    // Remove null values
-    Object.keys(updateData).forEach(key => {
-      if (updateData[key] === null || updateData[key] === undefined) {
-        delete updateData[key];
+    // Add background or imageUrl based on type
+    if (type === 'color') {
+      updateData.background = background || 'linear-gradient(135deg, #214929 0%, #2a5f35 50%, #214929 100%)';
+      // Remove imageUrl if switching to color
+      updateData.$unset = { imageUrl: "" };
+    } else if (type === 'image') {
+      if (!imageUrl) {
+        return NextResponse.json(
+          { success: false, error: 'Image URL is required for image type' },
+          { status: 400 }
+        );
       }
-    });
+      updateData.imageUrl = imageUrl;
+      // Remove background if switching to image
+      updateData.$unset = { background: "" };
+    }
+
+    // Add order if provided
+    if (order !== undefined) {
+      updateData.order = parseInt(order) || 0;
+    }
+
+    console.log('Update data prepared:', updateData);
+
+    // Prepare MongoDB update operation
+    const updateOperation = { $set: updateData };
+    if (updateData.$unset) {
+      updateOperation.$unset = updateData.$unset;
+      delete updateData.$unset;
+    }
 
     const result = await db.collection('hero-slides').updateOne(
       { _id: new ObjectId(id) },
-      { $set: updateData }
+      updateOperation
     );
+
+    console.log('MongoDB update result:', result);
 
     if (result.matchedCount === 0) {
       return NextResponse.json(
