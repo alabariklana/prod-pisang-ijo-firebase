@@ -4,7 +4,7 @@ runConfig:
 env:
   # Firebase Configuration (Required for build)
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
-    value: "AIzaSyADiSIc9OxSBKZVkziGQWrWlO6hWvSnrbg"
+    value: "AIzaSyAye78bINS_IFnr8XUrYu1fVW_yiY9SgSc"
     availability:
       - BUILD
       - RUNTIME
