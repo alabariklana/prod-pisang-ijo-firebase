@@ -76,7 +76,7 @@ env:
       - RUNTIME
       
   - variable: NEXT_PUBLIC_APP_URL
-    value: "https://prod-pisang-ijo-firebase--pisang-ijo-evi.asia-southeast1.hosted.app"
+    value: "https://pisangijoevi.web.id"
     availability:
       - BUILD
       - RUNTIME
