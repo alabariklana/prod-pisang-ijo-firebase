@@ -262,6 +262,12 @@ export default function DashboardHome() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+              <Link href="/dashboard/hero-slides" className="block">
+                <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-blue-300 hover:bg-blue-50">
+                  <Settings className="w-6 h-6 text-blue-600" />
+                  <span className="text-sm text-blue-700 font-medium">Hero Slides</span>
+                </Button>
+              </Link>
               <Link href="/dashboard/products" className="block">
                 <Button variant="outline" className="w-full h-20 flex flex-col gap-2">
                   <Package className="w-6 h-6" />
@@ -292,6 +298,8 @@ export default function DashboardHome() {
                   <span className="text-sm">Newsletter</span>
                 </Button>
               </Link>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mt-4">
               <Link href="/dashboard/settings" className="block">
                 <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-green-300 hover:bg-green-50">
                   <Gift className="w-6 h-6 text-green-600" />

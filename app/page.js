@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Phone, Mail, MapPin, Facebook, Instagram, ShoppingCart, Menu as MenuIcon, X, User as UserIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import HeroSlider from '@/components/HeroSlider';
 
 export default function Home() {
   const [products, setProducts] = useState([]);
@@ -234,59 +235,8 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative h-[500px] md:h-[600px] flex items-center justify-center" style={{ 
-        background: 'linear-gradient(135deg, #214929 0%, #2a5f35 50%, #214929 100%)',
-        boxShadow: 'inset 0 -4px 20px rgba(212, 175, 55, 0.15)'
-      }}>
- 
-        <div className="relative z-20 text-center text-white px-4 max-w-4xl">
-          <h1
-            className="text-4xl md:text-6xl font-bold mb-6 pb-2"
-            style={{ 
-              fontFamily: 'var(--font-playfair), serif', 
-              textShadow: '0 6px 9px rgba(4, 49, 31, 0.65), 0 2px 4px rgba(212, 175, 55, 0.3)',
-              background: 'linear-gradient(to bottom, #ffffff 0%, #F4E4C1 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-              lineHeight: '1.2'
-            }}
-          >
-            Pisang Ijo Khas Makassar
-          </h1>
-          <p className="text-base md:text-lg mb-8" style={{ fontFamily: 'var(--font-poppins), sans-serif', fontWeight: 500, color: '#F4E4C1', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>Kelezatan tradisional yang menyegarkan, dibuat dengan cinta dan resep turun temurun</p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/menu">
-              <Button 
-                size="lg" 
-                className="bg-white text-green-700 hover:bg-gray-100 w-full sm:w-auto transition-all duration-300 hover:scale-105 active:scale-95" 
-                style={{ 
-                  boxShadow: '0 4px 16px rgba(212, 175, 55, 0.4)',
-                  fontWeight: 600
-                }}
-              >
-                Lihat Menu
-              </Button>
-            </Link>
-            <Link href="/pesan">
-              <Button 
-                size="lg" 
-                className="w-full sm:w-auto transition-all duration-300 hover:scale-105 active:scale-95 hover:brightness-110" 
-                style={{ 
-                  backgroundColor: '#D4AF37',
-                  color: '#214929',
-                  fontWeight: 600,
-                  boxShadow: '0 4px 16px rgba(212, 175, 55, 0.5)',
-                  border: '1px solid rgba(255, 255, 255, 0.3)'
-                }}
-              >
-                Pesan Sekarang
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
+      {/* Hero Slider */}
+      <HeroSlider />
 
       {/* About Section */}
       <section className="py-16 px-4" style={{ backgroundColor: '#EBDEC5' }}>
