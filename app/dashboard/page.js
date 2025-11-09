@@ -143,11 +143,13 @@ export default function DashboardLoginPage() {
             </div>
           </div>
           <div>
-            <CardTitle className="text-2xl md:text-3xl text-green-700 mb-2">
-              Dashboard Admin
-            </CardTitle>
+            <h1 className="text-2xl md:text-3xl text-green-700 mb-2 font-bold">
+              Dashboard Admin - Pisang Ijo Evi
+            </h1>
             <CardDescription className="text-base">
-              Login dengan Google untuk mengakses dashboard
+              Portal administrasi untuk mengelola website, pesanan, produk, dan konten Pisang Ijo Evi. 
+              Masuk dengan akun yang terdaftar untuk mengakses panel kontrol lengkap bisnis dessert khas Makassar.
+              Dashboard ini menyediakan tools untuk manajemen inventori, analisis penjualan, dan customer relationship management.
             </CardDescription>
           </div>
         </CardHeader>
