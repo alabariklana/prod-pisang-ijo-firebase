@@ -10,7 +10,11 @@ export async function GET() {
       success: true, 
       slides: slides.map(slide => ({
         ...slide,
-        _id: slide._id.toString()
+        _id: slide._id.toString(),
+        // Ensure background field has a value for color type slides
+        background: slide.type === 'color' && !slide.background 
+          ? 'linear-gradient(135deg, #214929 0%, #2a5f35 50%, #214929 100%)'
+          : slide.background
       }))
     });
   } catch (error) {

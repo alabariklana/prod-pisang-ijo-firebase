@@ -54,6 +54,7 @@ export async function PUT(request, { params }) {
     // Add background or imageUrl based on type
     if (type === 'color') {
       updateData.background = background || 'linear-gradient(135deg, #214929 0%, #2a5f35 50%, #214929 100%)';
+      console.log('Setting background for color type:', updateData.background);
       // Remove imageUrl if switching to color
       updateData.$unset = { imageUrl: "" };
     } else if (type === 'image') {
@@ -64,6 +65,7 @@ export async function PUT(request, { params }) {
         );
       }
       updateData.imageUrl = imageUrl;
+      console.log('Setting imageUrl for image type:', updateData.imageUrl);
       // Remove background if switching to image
       updateData.$unset = { background: "" };
     }

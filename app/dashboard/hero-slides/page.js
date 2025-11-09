@@ -199,6 +199,9 @@ export default function HeroSlidesManagement() {
   };
 
   const startEdit = (slide) => {
+    console.log('Start edit - slide object:', slide);
+    console.log('Slide _id:', slide._id, 'Type:', typeof slide._id);
+    
     setFormData({
       title: slide.title || '',
       subtitle: slide.subtitle || '',

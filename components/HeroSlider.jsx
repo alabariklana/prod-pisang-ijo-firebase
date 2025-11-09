@@ -132,6 +132,8 @@ export default function HeroSlider() {
 
   const currentSlideData = slides[currentSlide] || defaultSlides[0];
   console.log('Current slide data:', currentSlideData);
+  console.log('Background value:', currentSlideData.background);
+  console.log('Type:', currentSlideData.type);
 
   return (
     <section 
@@ -144,16 +146,26 @@ export default function HeroSlider() {
         className="absolute inset-0 transition-all duration-1000 ease-in-out"
         style={{
           background: (() => {
+            console.log('Processing background for slide:', currentSlideData);
+            
             // Handle image type slides
             if (currentSlideData.type === 'image' && currentSlideData.imageUrl) {
-              return `linear-gradient(rgba(33, 73, 41, 0.6), rgba(33, 73, 41, 0.6)), url(${currentSlideData.imageUrl})`;
+              const imageBackground = `linear-gradient(rgba(33, 73, 41, 0.6), rgba(33, 73, 41, 0.6)), url(${currentSlideData.imageUrl})`;
+              console.log('Using image background:', imageBackground);
+              return imageBackground;
             }
+            
             // Handle color type slides
-            if (currentSlideData.type === 'color' && currentSlideData.background) {
-              return currentSlideData.background;
+            if (currentSlideData.type === 'color') {
+              const colorBackground = currentSlideData.background || 'linear-gradient(135deg, #214929 0%, #2a5f35 50%, #214929 100%)';
+              console.log('Using color background:', colorBackground);
+              return colorBackground;
             }
+            
             // Default fallback
-            return 'linear-gradient(135deg, #214929 0%, #2a5f35 50%, #214929 100%)';
+            const defaultBackground = 'linear-gradient(135deg, #214929 0%, #2a5f35 50%, #214929 100%)';
+            console.log('Using default background:', defaultBackground);
+            return defaultBackground;
           })(),
           backgroundSize: 'cover',
           backgroundPosition: 'center',
