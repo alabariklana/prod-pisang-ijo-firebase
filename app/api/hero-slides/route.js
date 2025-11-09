@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
+import { connectToDatabase } from '@/lib/mongodb';
 
 export async function GET() {
   try {
-    const db = await connectDB();
+    const { db } = await connectToDatabase();
     const slides = await db.collection('hero-slides').find({}).sort({ order: 1 }).toArray();
     
     return NextResponse.json({ 
@@ -42,7 +42,7 @@ export async function POST(request) {
       );
     }
 
-    const db = await connectDB();
+    const { db } = await connectToDatabase();
     
     // Get next order number
     const lastSlide = await db.collection('hero-slides').findOne({}, { sort: { order: -1 } });

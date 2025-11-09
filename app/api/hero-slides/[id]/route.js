@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
+import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 
 export async function PUT(request, { params }) {
@@ -15,7 +15,7 @@ export async function PUT(request, { params }) {
       );
     }
 
-    const db = await connectDB();
+    const { db } = await connectToDatabase();
     
     const updateData = {
       title,
@@ -68,7 +68,7 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    const db = await connectDB();
+    const { db } = await connectToDatabase();
     
     const result = await db.collection('hero-slides').deleteOne({
       _id: new ObjectId(id)
