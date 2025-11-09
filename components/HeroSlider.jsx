@@ -99,7 +99,41 @@ export default function HeroSlider() {
         console.log('Fetched slides data:', data);
         if (data.slides && data.slides.length > 0) {
           const activeSlides = data.slides.filter(slide => slide.isActive).sort((a, b) => a.order - b.order);
-          console.log('Active slides:', activeSlides);
+          console.log('Active slides received:', activeSlides);
+          
+          // Validate each slide with detailed debugging
+          activeSlides.forEach((slide, index) => {
+            console.log(`=== SLIDE ${index} VALIDATION ===`);
+            console.log('Full slide object:', slide);
+            console.log('Slide properties:', {
+              id: slide._id,
+              type: slide.type,
+              background: slide.background,
+              backgroundType: typeof slide.background,
+              backgroundLength: slide.background?.length,
+              imageUrl: slide.imageUrl,
+              imageUrlType: typeof slide.imageUrl,
+              title: slide.title,
+              isActive: slide.isActive
+            });
+            
+            // Test background validity
+            if (slide.type === 'color') {
+              console.log('Background validation for color slide:');
+              console.log('  - Has background:', !!slide.background);
+              console.log('  - Background value:', JSON.stringify(slide.background));
+              console.log('  - Is string:', typeof slide.background === 'string');
+              console.log('  - Not null:', slide.background !== null);
+            }
+            
+            if (slide.type === 'image') {
+              console.log('Image validation for image slide:');
+              console.log('  - Has imageUrl:', !!slide.imageUrl);
+              console.log('  - ImageUrl value:', JSON.stringify(slide.imageUrl));
+              console.log('  - Is string:', typeof slide.imageUrl === 'string');
+            }
+          });
+          
           setSlides(activeSlides);
         } else {
           console.log('No slides found, using default');
@@ -144,38 +178,89 @@ export default function HeroSlider() {
       {/* Background */}
       <div 
         className="absolute inset-0 transition-all duration-1000 ease-in-out"
-        style={{
-          background: (() => {
-            console.log('Processing background for slide:', currentSlideData);
+        style={(() => {
+          console.log('=== BACKGROUND STYLE CALCULATION ===');
+          console.log('Current slide data:', currentSlideData);
+          console.log('Slide type:', currentSlideData?.type);
+          console.log('Background value:', currentSlideData?.background);
+          console.log('ImageURL value:', currentSlideData?.imageUrl);
+          
+          // Separate background properties to avoid shorthand/longhand conflicts
+          let style = {
+            boxShadow: 'inset 0 -4px 20px rgba(212, 175, 55, 0.15)',
+            width: '100%',
+            height: '100%'
+          };
+
+          // Handle different background types
+          if (currentSlideData?.type === 'image' && currentSlideData?.imageUrl) {
+            console.log('=== IMAGE BACKGROUND PROCESSING ===');
+            console.log('Image URL:', currentSlideData.imageUrl);
+            console.log('URL type:', typeof currentSlideData.imageUrl);
+            console.log('URL length:', currentSlideData.imageUrl?.length);
+            console.log('URL starts with http:', currentSlideData.imageUrl?.startsWith('http'));
             
-            // Handle image type slides
-            if (currentSlideData.type === 'image' && currentSlideData.imageUrl) {
-              const imageBackground = `linear-gradient(rgba(33, 73, 41, 0.6), rgba(33, 73, 41, 0.6)), url(${currentSlideData.imageUrl})`;
-              console.log('Using image background:', imageBackground);
-              return imageBackground;
+            // Test if it's a valid URL
+            try {
+              new URL(currentSlideData.imageUrl);
+              console.log('✅ Valid URL format');
+            } catch (e) {
+              console.log('❌ Invalid URL format:', e.message);
             }
             
-            // Handle color type slides
-            if (currentSlideData.type === 'color') {
-              const colorBackground = currentSlideData.background || 'linear-gradient(135deg, #214929 0%, #2a5f35 50%, #214929 100%)';
-              console.log('Using color background:', colorBackground);
-              return colorBackground;
-            }
+            const imageBackground = `linear-gradient(rgba(33, 73, 41, 0.6), rgba(33, 73, 41, 0.6)), url("${currentSlideData.imageUrl}")`;
+            console.log('Constructed background:', imageBackground);
             
+            style.backgroundImage = imageBackground;
+            style.backgroundSize = 'cover';
+            style.backgroundPosition = 'center';
+            style.backgroundRepeat = 'no-repeat';
+            
+            // Add fallback for failed image loads
+            style.backgroundColor = '#214929';
+            
+            console.log('✅ IMAGE STYLE APPLIED:', {
+              backgroundImage: style.backgroundImage,
+              backgroundSize: style.backgroundSize,
+              backgroundPosition: style.backgroundPosition,
+              backgroundRepeat: style.backgroundRepeat
+            });
+          } else if (currentSlideData?.type === 'color') {
+            console.log('=== COLOR BACKGROUND PROCESSING ===');
+            const backgroundValue = currentSlideData?.background;
+            console.log('Raw background from data:', backgroundValue);
+            
+            if (!backgroundValue || backgroundValue === 'null' || backgroundValue === null || backgroundValue === undefined) {
+              const fallback = 'linear-gradient(135deg, #214929 0%, #2a5f35 50%, #214929 100%)';
+              console.log('❌ Background is null/empty, using fallback:', fallback);
+              style.backgroundImage = fallback;
+            } else {
+              console.log('✅ Using color background:', backgroundValue);
+              if (backgroundValue.includes('gradient')) {
+                style.backgroundImage = backgroundValue;
+              } else {
+                style.backgroundColor = backgroundValue;
+              }
+            }
+            console.log('✅ COLOR STYLE APPLIED');
+          } else {
             // Default fallback
-            const defaultBackground = 'linear-gradient(135deg, #214929 0%, #2a5f35 50%, #214929 100%)';
-            console.log('Using default background:', defaultBackground);
-            return defaultBackground;
-          })(),
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-          boxShadow: 'inset 0 -4px 20px rgba(212, 175, 55, 0.15)'
-        }}
+            console.log('=== DEFAULT FALLBACK ===');
+            style.backgroundImage = 'linear-gradient(135deg, #214929 0%, #2a5f35 50%, #214929 100%)';
+            console.log('✅ DEFAULT STYLE APPLIED');
+          }
+          
+          console.log('Final calculated style:', style);
+          console.log('=================================');
+          
+          return style;
+        })()}
       />
 
-      {/* Overlay for better text readability */}
-      <div className="absolute inset-0 bg-black bg-opacity-20" />
+      {/* Overlay for better text readability - only for image backgrounds */}
+      {currentSlideData?.type === 'image' && currentSlideData?.imageUrl && (
+        <div className="absolute inset-0 bg-black bg-opacity-10" />
+      )}
 
       {/* Content */}
       <div className="relative z-20 text-center text-white px-4 max-w-4xl">

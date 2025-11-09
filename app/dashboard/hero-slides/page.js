@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -64,36 +65,127 @@ export default function HeroSlidesManagement() {
     e.preventDefault();
     setLoading(true);
 
+    // Capture editing slide at the moment of submission to avoid race conditions
+    const currentEditingSlide = editingSlide;
+    
     try {
-      console.log('Submitting form data:', formData);
-      console.log('Editing slide:', editingSlide);
-      if (editingSlide) {
-        console.log('Slide ID:', editingSlide._id, 'Type:', typeof editingSlide._id, 'Length:', editingSlide._id?.length);
+      console.log('=== FORM SUBMISSION DEBUG ===');
+      console.log('Form data being submitted:', formData);
+      console.log('Form data type:', formData.type);
+      console.log('Form data imageUrl:', formData.imageUrl);
+      console.log('Form data background:', formData.background);
+      console.log('Current editing slide at submission:', currentEditingSlide);
+      console.log('editingSlide state value:', editingSlide);
+      
+      if (currentEditingSlide) {
+        console.log('=== SLIDE ID VALIDATION ===');
+        console.log('Full currentEditingSlide object:', JSON.stringify(currentEditingSlide, null, 2));
+        console.log('Slide ID raw:', currentEditingSlide._id);
+        console.log('Slide ID type:', typeof currentEditingSlide._id);
+        console.log('Slide ID length:', currentEditingSlide._id?.length);
+        
+        // Check if _id exists
+        if (!currentEditingSlide._id) {
+          console.error('CRITICAL ERROR: Slide ID is completely missing!');
+          console.error('CurrentEditingSlide keys:', Object.keys(currentEditingSlide));
+          toast.error('Critical Error: Slide ID is missing');
+          setLoading(false);
+          return;
+        }
+        
+        // Convert to string and validate
+        const slideId = String(currentEditingSlide._id).trim();
+        console.log('Processed slide ID:', slideId);
+        console.log('Processed ID length:', slideId.length);
+        console.log('ID validation regex test:', /^[0-9a-fA-F]{24}$/.test(slideId));
+        
+        if (slideId.length !== 24 || !/^[0-9a-fA-F]{24}$/.test(slideId)) {
+          console.error('ERROR: Invalid slide ID format');
+          console.error('Expected: 24 character hex string');
+          console.error('Got:', slideId, 'Length:', slideId.length);
+          toast.error('Error: Invalid slide ID format');
+          setLoading(false);
+          return;
+        }
+        console.log('✅ Slide ID validation passed');
       }
-      const url = editingSlide ? `/api/hero-slides/${editingSlide._id}` : '/api/hero-slides';
-      const method = editingSlide ? 'PUT' : 'POST';
-      console.log('Request URL:', url, 'Method:', method);
+      
+      // Use different approach for update vs create
+      let url, method, requestBody;
+      
+      if (currentEditingSlide) {
+        // For updates, use the update endpoint with ID in body
+        url = '/api/hero-slides/update';
+        method = 'PUT';
+        requestBody = {
+          ...formData,
+          id: String(currentEditingSlide._id).trim()
+        };
+        console.log('=== UPDATE REQUEST ===');
+        console.log('Using update endpoint with ID in body');
+      } else {
+        // For creates, use the main endpoint
+        url = '/api/hero-slides';
+        method = 'POST';
+        requestBody = formData;
+        console.log('=== CREATE REQUEST ===');
+        console.log('Using create endpoint');
+      }
+      
+      console.log('Final request URL:', url);
+      console.log('Request method:', method);
+      console.log('Request body:', requestBody);
 
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(requestBody),
       });
 
       console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
 
       if (response.ok) {
         const result = await response.json();
         console.log('Success response:', result);
-        toast.success(editingSlide ? 'Slide updated successfully!' : 'Slide created successfully!');
+        toast.success(currentEditingSlide ? 'Slide updated successfully!' : 'Slide created successfully!');
         await fetchSlides();
         resetForm();
       } else {
-        const error = await response.json();
-        console.error('Error response:', error);
-        toast.error(error.error || 'Operation failed');
+        // More detailed error logging
+        console.log('Error response status:', response.status);
+        console.log('Error response statusText:', response.statusText);
+        
+        let errorData;
+        const contentType = response.headers.get('content-type');
+        console.log('Response content-type:', contentType);
+        
+        try {
+          const responseText = await response.text();
+          console.log('Raw response text:', responseText);
+          console.log('Response text length:', responseText.length);
+          
+          if (responseText.length === 0) {
+            errorData = { error: `Empty response with status ${response.status}: ${response.statusText}` };
+          } else if (contentType && contentType.includes('application/json')) {
+            try {
+              errorData = JSON.parse(responseText);
+            } catch (jsonError) {
+              console.error('JSON parse failed:', jsonError);
+              errorData = { error: `Invalid JSON response: ${responseText}` };
+            }
+          } else {
+            errorData = { error: responseText || `HTTP ${response.status}: ${response.statusText}` };
+          }
+        } catch (parseError) {
+          console.error('Failed to read response:', parseError);
+          errorData = { error: `HTTP ${response.status}: ${response.statusText} - Failed to read response` };
+        }
+        
+        console.error('Parsed error response:', errorData);
+        toast.error(errorData.error || 'Operation failed');
       }
     } catch (error) {
       console.error('Error saving slide:', error);
@@ -139,7 +231,10 @@ export default function HeroSlidesManagement() {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('Image upload successful, URL:', data.url);
+        console.log('Current editingSlide before setFormData:', editingSlide);
         setFormData(prev => ({ ...prev, imageUrl: data.url }));
+        console.log('Updated formData with imageUrl');
         toast.success('Image uploaded successfully!');
       } else {
         toast.error('Failed to upload image');
@@ -163,12 +258,15 @@ export default function HeroSlidesManagement() {
       };
       console.log('Toggle payload:', payload);
       
-      const response = await fetch(`/api/hero-slides/${slide._id}`, {
+      const response = await fetch('/api/hero-slides/update', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          ...payload,
+          id: slide._id
+        }),
       });
       
       console.log('Toggle response status:', response.status);
@@ -199,8 +297,22 @@ export default function HeroSlidesManagement() {
   };
 
   const startEdit = (slide) => {
+    console.log('=== START EDIT FUNCTION ===');
     console.log('Start edit - slide object:', slide);
     console.log('Slide _id:', slide._id, 'Type:', typeof slide._id);
+    console.log('Slide keys:', Object.keys(slide));
+    
+    // Validate slide has required _id
+    if (!slide._id) {
+      console.error('ERROR: Slide object missing _id!', slide);
+      toast.error('Error: Invalid slide data');
+      return;
+    }
+    
+    const slideToEdit = {
+      ...slide,
+      _id: slide._id // Ensure _id is preserved
+    };
     
     setFormData({
       title: slide.title || '',
@@ -210,8 +322,15 @@ export default function HeroSlidesManagement() {
       imageUrl: slide.imageUrl || '',
       isActive: slide.isActive !== false
     });
-    setEditingSlide(slide);
+    
+    console.log('Setting editingSlide to:', slideToEdit);
+    setEditingSlide(slideToEdit);
     setShowForm(true);
+    
+    // Verify state was set correctly
+    setTimeout(() => {
+      console.log('Verification - editingSlide after state update should contain:', slideToEdit);
+    }, 100);
   };
 
   if (loading && slides.length === 0) {
@@ -228,19 +347,35 @@ export default function HeroSlidesManagement() {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Breadcrumb */}
+      <div className="flex items-center space-x-2 text-sm text-gray-600 mb-4">
+        <Link href="/dashboard" className="hover:text-green-600 transition-colors">
+          Dashboard
+        </Link>
+        <span>/</span>
+        <span className="text-green-800 font-medium">Hero Slides</span>
+      </div>
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-green-800">Hero Slides</h1>
           <p className="text-gray-600">Manage homepage hero section slides</p>
         </div>
-        <Button
-          onClick={() => setShowForm(true)}
-          className="bg-green-600 hover:bg-green-700"
-          disabled={loading}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add New Slide
-        </Button>
+        <div className="flex gap-3">
+          <Link href="/dashboard">
+            <Button variant="outline" className="border-green-600 text-green-600 hover:bg-green-50">
+              ← Back to Dashboard
+            </Button>
+          </Link>
+          <Button
+            onClick={() => setShowForm(true)}
+            className="bg-green-600 hover:bg-green-700"
+            disabled={loading}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add New Slide
+          </Button>
+        </div>
       </div>
 
       {/* Form */}
@@ -273,7 +408,11 @@ export default function HeroSlidesManagement() {
 
                 <div className="space-y-2">
                   <Label htmlFor="type">Background Type</Label>
-                  <Select value={formData.type} onValueChange={(value) => setFormData(prev => ({ ...prev, type: value }))}>
+                  <Select value={formData.type} onValueChange={(value) => {
+                    console.log('Type changing from', formData.type, 'to', value);
+                    console.log('Current editingSlide before type change:', editingSlide);
+                    setFormData(prev => ({ ...prev, type: value }));
+                  }}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
