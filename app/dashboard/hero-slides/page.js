@@ -66,6 +66,10 @@ export default function HeroSlidesManagement() {
 
     try {
       console.log('Submitting form data:', formData);
+      console.log('Editing slide:', editingSlide);
+      if (editingSlide) {
+        console.log('Slide ID:', editingSlide._id, 'Type:', typeof editingSlide._id, 'Length:', editingSlide._id?.length);
+      }
       const url = editingSlide ? `/api/hero-slides/${editingSlide._id}` : '/api/hero-slides';
       const method = editingSlide ? 'PUT' : 'POST';
       console.log('Request URL:', url, 'Method:', method);
@@ -150,16 +154,24 @@ export default function HeroSlidesManagement() {
 
   const toggleSlideActive = async (slide) => {
     try {
+      console.log('Toggle slide active:', slide);
+      console.log('Slide ID for toggle:', slide._id, 'Type:', typeof slide._id, 'Length:', slide._id?.length);
+      
+      const payload = {
+        ...slide,
+        isActive: !slide.isActive,
+      };
+      console.log('Toggle payload:', payload);
+      
       const response = await fetch(`/api/hero-slides/${slide._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...slide,
-          isActive: !slide.isActive,
-        }),
+        body: JSON.stringify(payload),
       });
+      
+      console.log('Toggle response status:', response.status);
 
       if (response.ok) {
         toast.success(`Slide ${!slide.isActive ? 'activated' : 'deactivated'}`);

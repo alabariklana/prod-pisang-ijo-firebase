@@ -96,12 +96,17 @@ export default function HeroSlider() {
       const response = await fetch('/api/hero-slides');
       if (response.ok) {
         const data = await response.json();
+        console.log('Fetched slides data:', data);
         if (data.slides && data.slides.length > 0) {
-          setSlides(data.slides.filter(slide => slide.isActive).sort((a, b) => a.order - b.order));
+          const activeSlides = data.slides.filter(slide => slide.isActive).sort((a, b) => a.order - b.order);
+          console.log('Active slides:', activeSlides);
+          setSlides(activeSlides);
         } else {
+          console.log('No slides found, using default');
           setSlides(defaultSlides);
         }
       } else {
+        console.log('Failed to fetch slides, using default');
         setSlides(defaultSlides);
       }
     } catch (error) {
@@ -126,6 +131,7 @@ export default function HeroSlider() {
   }
 
   const currentSlideData = slides[currentSlide] || defaultSlides[0];
+  console.log('Current slide data:', currentSlideData);
 
   return (
     <section 

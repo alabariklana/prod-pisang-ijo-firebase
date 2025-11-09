@@ -7,14 +7,26 @@ export async function PUT(request, { params }) {
     const { id } = params;
     const data = await request.json();
     console.log('Received data for update:', data);
-    console.log('Slide ID:', id);
+    console.log('Slide ID:', id, 'Type:', typeof id, 'Length:', id?.length);
     
     const { title, subtitle, type, background, imageUrl, isActive, order } = data;
 
-    if (!ObjectId.isValid(id)) {
-      console.log('Invalid ObjectId:', id);
+    // More robust ObjectId validation
+    if (!id || typeof id !== 'string' || id.length !== 24 || !/^[0-9a-fA-F]{24}$/.test(id)) {
+      console.log('Invalid ObjectId format:', id);
       return NextResponse.json(
-        { success: false, error: 'Invalid slide ID' },
+        { success: false, error: `Invalid slide ID format: ${id}` },
+        { status: 400 }
+      );
+    }
+
+    let objectId;
+    try {
+      objectId = new ObjectId(id);
+    } catch (error) {
+      console.log('Error creating ObjectId:', error);
+      return NextResponse.json(
+        { success: false, error: `Cannot create ObjectId from: ${id}` },
         { status: 400 }
       );
     }
@@ -71,7 +83,7 @@ export async function PUT(request, { params }) {
     }
 
     const result = await db.collection('hero-slides').updateOne(
-      { _id: new ObjectId(id) },
+      { _id: objectId },
       updateOperation
     );
 
@@ -98,9 +110,20 @@ export async function DELETE(request, { params }) {
   try {
     const { id } = params;
 
-    if (!ObjectId.isValid(id)) {
+    // More robust ObjectId validation
+    if (!id || typeof id !== 'string' || id.length !== 24 || !/^[0-9a-fA-F]{24}$/.test(id)) {
       return NextResponse.json(
-        { success: false, error: 'Invalid slide ID' },
+        { success: false, error: `Invalid slide ID format: ${id}` },
+        { status: 400 }
+      );
+    }
+
+    let objectId;
+    try {
+      objectId = new ObjectId(id);
+    } catch (error) {
+      return NextResponse.json(
+        { success: false, error: `Cannot create ObjectId from: ${id}` },
         { status: 400 }
       );
     }
@@ -108,7 +131,7 @@ export async function DELETE(request, { params }) {
     const { db } = await connectToDatabase();
     
     const result = await db.collection('hero-slides').deleteOne({
-      _id: new ObjectId(id)
+      _id: objectId
     });
 
     if (result.deletedCount === 0) {
