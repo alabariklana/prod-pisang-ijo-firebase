@@ -470,6 +470,45 @@ export default function OrdersPage() {
                 </div>
               </div>
 
+              {/* Shipping Info */}
+              {selectedOrder.shipping && (
+                <div className="border-t pt-4">
+                  <h4 className="font-bold mb-3">Informasi Pengiriman</h4>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-600 mb-1">Kurir</p>
+                        <p className="font-semibold">{selectedOrder.shipping.courierName} ({selectedOrder.shipping.courier})</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600 mb-1">Layanan</p>
+                        <p className="font-semibold">{selectedOrder.shipping.service}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600 mb-1">Ongkir</p>
+                        <p className="font-semibold">Rp {(selectedOrder.shippingCost || 0).toLocaleString('id-ID')}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600 mb-1">Estimasi</p>
+                        <p className="font-semibold">{selectedOrder.shipping.etd} hari</p>
+                      </div>
+                      <div className="md:col-span-2">
+                        <p className="text-gray-600 mb-1">Tujuan</p>
+                        <p className="font-semibold">
+                          {selectedOrder.shipping.destination?.cityName}, {selectedOrder.shipping.destination?.provinceName}
+                        </p>
+                      </div>
+                    </div>
+                    {selectedOrder.trackingNumber && (
+                      <div className="mt-4 pt-4 border-t border-blue-300">
+                        <p className="text-gray-600 mb-1">Nomor Resi</p>
+                        <p className="font-semibold text-lg">{selectedOrder.trackingNumber}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Items */}
               <div className="border-t pt-4">
                 <h4 className="font-bold mb-3">Item Pesanan</h4>
@@ -477,7 +516,7 @@ export default function OrdersPage() {
                   {selectedOrder.items?.map((item, idx) => (
                     <div key={idx} className="flex justify-between items-center p-3 bg-gray-50 rounded">
                       <div>
-                        <p className="font-medium">{item.name}</p>
+                        <p className="font-medium">{item.productName || item.name}</p>
                         <p className="text-sm text-gray-500">
                           {item.quantity}x @ Rp {(item.price || 0).toLocaleString('id-ID')}
                         </p>
@@ -487,6 +526,24 @@ export default function OrdersPage() {
                       </p>
                     </div>
                   ))}
+                  
+                  {/* Order Summary */}
+                  <div className="border-t pt-3 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Subtotal Produk:</span>
+                      <span>Rp {(selectedOrder.subtotal || 0).toLocaleString('id-ID')}</span>
+                    </div>
+                    {selectedOrder.shippingCost > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span>Ongkir:</span>
+                        <span>Rp {(selectedOrder.shippingCost || 0).toLocaleString('id-ID')}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between font-bold text-lg pt-2 border-t">
+                      <span>Total:</span>
+                      <span className="text-green-600">Rp {(selectedOrder.totalAmount || 0).toLocaleString('id-ID')}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 

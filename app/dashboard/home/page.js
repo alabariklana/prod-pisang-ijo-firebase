@@ -298,6 +298,12 @@ export default function DashboardHome() {
                   <span className="text-sm">Newsletter</span>
                 </Button>
               </Link>
+              <Link href="/shipping" className="block">
+                <Button variant="outline" className="w-full h-20 flex flex-col gap-2">
+                  <Truck className="w-6 h-6" />
+                  <span className="text-sm">Ongkir & Tracking</span>
+                </Button>
+              </Link>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mt-4">
               <Link href="/dashboard/settings" className="block">

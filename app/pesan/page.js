@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Plus, Minus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import ShippingCalculator from '@/components/ShippingCalculator';
 
 export default function PesanPage() {
   const [products, setProducts] = useState([]);
@@ -18,6 +19,7 @@ export default function PesanPage() {
   const [customerAddress, setCustomerAddress] = useState('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
+  const [selectedShipping, setSelectedShipping] = useState(null);
 
   useEffect(() => {
     fetchProducts();
@@ -76,7 +78,23 @@ export default function PesanPage() {
   };
 
   const calculateTotal = () => {
+    const subtotal = cart.reduce((sum, item) => sum + (Number(item.price || 0) * item.quantity), 0);
+    const shippingCost = selectedShipping ? selectedShipping.cost : 0;
+    return subtotal + shippingCost;
+  };
+
+  const getSubtotal = () => {
     return cart.reduce((sum, item) => sum + (Number(item.price || 0) * item.quantity), 0);
+  };
+
+  const getTotalWeight = () => {
+    // Estimate weight based on quantity (default 500g per item if no weight specified)
+    return cart.reduce((sum, item) => sum + (item.weight || 500) * item.quantity, 0);
+  };
+
+  const handleShippingSelected = (shippingData) => {
+    setSelectedShipping(shippingData);
+    toast.success(`Ongkir ${shippingData.courierName} - ${shippingData.service} dipilih`);
   };
 
   const handleSubmitOrder = async (e) => {
@@ -105,7 +123,10 @@ export default function PesanPage() {
           quantity: item.quantity,
           price: item.price
         })),
+        subtotal: getSubtotal(),
+        shippingCost: selectedShipping ? selectedShipping.cost : 0,
         totalAmount: calculateTotal(),
+        shipping: selectedShipping,
         notes
       };
 
@@ -255,9 +276,19 @@ export default function PesanPage() {
                         </div>
                       </div>
                     ))}
-                    <div className="pt-4 border-t">
-                      <div className="flex justify-between items-center text-xl font-bold">
-                        <span>Total:</span>
+                    <div className="pt-4 border-t space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span>Subtotal Produk:</span>
+                        <span>Rp {getSubtotal().toLocaleString('id-ID')}</span>
+                      </div>
+                      {selectedShipping && (
+                        <div className="flex justify-between items-center">
+                          <span>Ongkir ({selectedShipping.courierName} - {selectedShipping.service}):</span>
+                          <span>Rp {selectedShipping.cost.toLocaleString('id-ID')}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center text-xl font-bold pt-2 border-t">
+                        <span>Total Bayar:</span>
                         <span className="text-green-600">Rp {calculateTotal().toLocaleString('id-ID')}</span>
                       </div>
                     </div>
@@ -267,8 +298,17 @@ export default function PesanPage() {
             )}
           </div>
 
-          {/* Customer Form */}
-          <div>
+          {/* Customer Form & Shipping */}
+          <div className="space-y-6">
+            {/* Shipping Calculator */}
+            {cart.length > 0 && (
+              <ShippingCalculator
+                onShippingSelected={handleShippingSelected}
+                defaultWeight={getTotalWeight()}
+                origin="268" // Makassar, Sulawesi Selatan - Kelurahan Banta-Bantaeng, Kecamatan Rappocini
+              />
+            )}
+
             <Card>
               <CardHeader>
                 <CardTitle>Data Pemesan</CardTitle>
@@ -342,6 +382,12 @@ export default function PesanPage() {
                   >
                     {loading ? 'Memproses...' : `Pesan Sekarang (Rp ${calculateTotal().toLocaleString('id-ID')})`}
                   </Button>
+                  
+                  {cart.length > 0 && !selectedShipping && (
+                    <div className="text-center text-amber-600 text-sm">
+                      💡 Pilih ongkir di atas untuk melanjutkan pemesanan
+                    </div>
+                  )}
                 </form>
               </CardContent>
             </Card>

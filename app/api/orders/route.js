@@ -45,7 +45,7 @@ export async function POST(request) {
     const body = await request.json().catch(() => null);
     if (!body) return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
 
-    const { customerName, customerEmail, customerPhone, customerAddress, items, totalAmount } = body;
+    const { customerName, customerEmail, customerPhone, customerAddress, items, subtotal, shippingCost, totalAmount, shipping, notes } = body;
 
     if (!customerName || !customerEmail || !customerPhone || !customerAddress || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -61,9 +61,13 @@ export async function POST(request) {
       customerPhone,
       customerAddress,
       items,
+      subtotal: Number(subtotal) || 0,
+      shippingCost: Number(shippingCost) || 0,
       totalAmount: Number(totalAmount) || 0,
-      notes: body.notes || '',
+      shipping: shipping || null,
+      notes: notes || '',
       status: 'pending',
+      trackingNumber: null, // Will be filled when item is shipped
       createdAt: new Date()
     };
 
