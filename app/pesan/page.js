@@ -20,6 +20,8 @@ export default function PesanPage() {
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedShipping, setSelectedShipping] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
 
   useEffect(() => {
     fetchProducts();
@@ -35,7 +37,12 @@ export default function PesanPage() {
         return;
       }
       const data = await res.json();
-      setProducts(Array.isArray(data) ? data.filter(p => p?.available) : []);
+      // Filter produk yang aktif dan masih ada stok
+      const availableProducts = Array.isArray(data) ? data.filter(p => 
+        p?.isActive !== false && (p?.stock > 0 || p?.available)
+      ) : [];
+      console.log('Available products:', availableProducts.length);
+      setProducts(availableProducts);
     } catch (error) {
       console.error('Error fetching products:', error);
       setProducts([]);
@@ -91,6 +98,17 @@ export default function PesanPage() {
     // Estimate weight based on quantity (default 500g per item if no weight specified)
     return cart.reduce((sum, item) => sum + (item.weight || 500) * item.quantity, 0);
   };
+
+  // Filter produk berdasarkan search dan kategori
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (product.description || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = !selectedCategory || product.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  // Get unique categories
+  const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
 
   const handleShippingSelected = (shippingData) => {
     setSelectedShipping(shippingData);
@@ -196,33 +214,106 @@ export default function PesanPage() {
           <div>
             <Card>
               <CardHeader>
-                <CardTitle>Pilih Produk</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  Pilih Produk 
+                  <span className="text-sm font-normal text-gray-500">
+                    {searchQuery || selectedCategory ? 
+                      `${filteredProducts.length} dari ${products.length} produk` :
+                      `${products.length} produk tersedia`
+                    }
+                  </span>
+                </CardTitle>
               </CardHeader>
               <CardContent>
+                {/* Search and Filter */}
+                <div className="space-y-3 mb-4">
+                  <div>
+                    <Input
+                      placeholder="Cari produk..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                  {categories.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant={selectedCategory === '' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setSelectedCategory('')}
+                      >
+                        Semua
+                      </Button>
+                      {categories.map(category => (
+                        <Button
+                          key={category}
+                          variant={selectedCategory === category ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setSelectedCategory(category)}
+                        >
+                          {category}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 <div className="space-y-4">
                   {productsLoading ? (
                     <div className="text-center py-8 text-gray-600">Memuat produk...</div>
-                  ) : products.length === 0 ? (
-                    <div className="text-center py-8 text-gray-600">Tidak ada produk tersedia.</div>
+                  ) : filteredProducts.length === 0 ? (
+                    <div className="text-center py-8 text-gray-600">
+                      {searchQuery || selectedCategory ? 
+                        'Tidak ada produk yang sesuai dengan pencarian.' : 
+                        'Tidak ada produk tersedia.'
+                      }
+                    </div>
                   ) : (
-                    products.map((product, idx) => {
+                    filteredProducts.map((product, idx) => {
                       const key = product._id ?? product.id ?? product.slug ?? `${product.name}-${idx}`;
                       return (
                         <div key={String(key)} className="flex items-center justify-between p-4 border rounded-lg hover:border-green-600 transition">
                           <div className="flex-1">
-                            <h3 className="font-semibold text-green-700">{product.name}</h3>
-                            <p className="text-sm text-gray-600">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-semibold text-green-700">{product.name}</h3>
+                              {product.category && (
+                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                                  {product.category}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-600 mb-2">
                               {product.description
                                 ? (product.description.length > 60 ? product.description.substring(0, 60) + '...' : product.description)
-                                : ''}
+                                : 'Produk berkualitas tinggi'}
                             </p>
-                            <p className="text-lg font-bold text-green-600 mt-2">
-                              Rp {Number(product.price || 0).toLocaleString('id-ID')}
-                            </p>
+                            <div className="flex items-center justify-between">
+                              <p className="text-lg font-bold text-green-600">
+                                Rp {Number(product.price || 0).toLocaleString('id-ID')}
+                              </p>
+                              <div className="text-xs text-gray-500">
+                                {product.stock !== undefined ? (
+                                  <span className={`px-2 py-1 rounded ${
+                                    product.stock > (product.lowStockThreshold || 5) 
+                                      ? 'bg-green-100 text-green-700' 
+                                      : product.stock > 0 
+                                        ? 'bg-yellow-100 text-yellow-700'
+                                        : 'bg-red-100 text-red-700'
+                                  }`}>
+                                    Stok: {product.stock}
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-1 rounded bg-blue-100 text-blue-700">
+                                    Tersedia
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           </div>
                           <Button 
                             onClick={() => addToCart(product)}
-                            className="bg-green-600 hover:bg-green-700"
+                            className="bg-green-600 hover:bg-green-700 ml-4"
+                            disabled={product.stock !== undefined && product.stock <= 0}
                           >
                             <Plus className="h-4 w-4" />
                           </Button>
