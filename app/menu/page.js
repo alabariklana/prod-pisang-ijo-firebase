@@ -30,7 +30,9 @@ export default function MenuPage() {
       
       // Validate that data is an array
       if (Array.isArray(data)) {
-        setProducts(data);
+        // Filter only active products for menu display
+        const activeProducts = data.filter(product => product.isActive !== false);
+        setProducts(activeProducts);
       } else {
         console.error('Invalid data format:', data);
         setProducts([]);
@@ -167,11 +169,18 @@ export default function MenuPage() {
                         }}>
                           Rp {(Number(product.price) || 0).toLocaleString('id-ID')}
                         </p>
-                        {product.available ? (
-                          <span className="text-xs md:text-sm px-2 py-1 rounded" style={{ color: '#214929', backgroundColor: '#F4E4C1' }}>Tersedia</span>
-                        ) : (
-                          <span className="text-xs md:text-sm text-red-600 bg-red-100 px-2 py-1 rounded">Habis</span>
-                        )}
+                        {(() => {
+                          const stock = Number(product.stock) || 0;
+                          const threshold = Number(product.lowStockThreshold) || 5;
+                          
+                          if (stock === 0) {
+                            return <span className="text-xs md:text-sm text-red-600 bg-red-100 px-2 py-1 rounded">Habis</span>;
+                          } else if (stock <= threshold) {
+                            return <span className="text-xs md:text-sm text-yellow-600 bg-yellow-100 px-2 py-1 rounded">Terbatas</span>;
+                          } else {
+                            return <span className="text-xs md:text-sm px-2 py-1 rounded" style={{ color: '#214929', backgroundColor: '#F4E4C1' }}>Tersedia</span>;
+                          }
+                        })()}
                       </div>
                     </CardContent>
                     <CardFooter className="flex gap-2">
@@ -185,7 +194,11 @@ export default function MenuPage() {
                         </Button>
                       </Link>
                       <Link href="/pesan" className="flex-1">
-                        <Button className="w-full transition-all duration-300 hover:scale-105 active:scale-95" style={{ backgroundColor: '#214929' }} disabled={!product.available}>
+                        <Button 
+                          className="w-full transition-all duration-300 hover:scale-105 active:scale-95" 
+                          style={{ backgroundColor: (Number(product.stock) || 0) > 0 ? '#214929' : '#9CA3AF' }} 
+                          disabled={(Number(product.stock) || 0) === 0}
+                        >
                           {product.available ? 'Pesan' : 'Habis'}
                         </Button>
                       </Link>

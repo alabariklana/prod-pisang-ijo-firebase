@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { StockStatus, StockQuantity } from '@/components/StockStatus';
 import { Trash2, Upload, ArrowLeft, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -17,6 +19,9 @@ export default function DashboardProductsPage() {
   const [category, setCategory] = useState('');
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
+  const [stock, setStock] = useState('');
+  const [lowStockThreshold, setLowStockThreshold] = useState('5');
+  const [isActive, setIsActive] = useState(true);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
@@ -26,6 +31,9 @@ export default function DashboardProductsPage() {
   const [editCategory, setEditCategory] = useState('');
   const [editPrice, setEditPrice] = useState('');
   const [editDescription, setEditDescription] = useState('');
+  const [editStock, setEditStock] = useState('');
+  const [editLowStockThreshold, setEditLowStockThreshold] = useState('5');
+  const [editIsActive, setEditIsActive] = useState(true);
   const [editImageFile, setEditImageFile] = useState(null);
   const [editImagePreview, setEditImagePreview] = useState(null);
 
@@ -128,6 +136,9 @@ export default function DashboardProductsPage() {
         price: Number(price),
         description,
         imageUrl: imageUrl || '',
+        stock: Number(stock || 0),
+        lowStockThreshold: Number(lowStockThreshold || 5),
+        isActive: isActive,
       };
 
       const res = await fetch('/api/products', {
@@ -147,6 +158,9 @@ export default function DashboardProductsPage() {
       setCategory('');
       setPrice('');
       setDescription('');
+      setStock('');
+      setLowStockThreshold('5');
+      setIsActive(true);
       setImageFile(null);
       if (imagePreview) {
         URL.revokeObjectURL(imagePreview);
@@ -184,6 +198,9 @@ export default function DashboardProductsPage() {
     setEditCategory(product.category || '');
     setEditPrice(String(product.price || ''));
     setEditDescription(product.description || '');
+    setEditStock(String(product.stock || 0));
+    setEditLowStockThreshold(String(product.lowStockThreshold || 5));
+    setEditIsActive(product.isActive !== false);
     setEditImageFile(null);
     if (editImagePreview) {
       URL.revokeObjectURL(editImagePreview);
@@ -197,6 +214,9 @@ export default function DashboardProductsPage() {
     setEditCategory('');
     setEditPrice('');
     setEditDescription('');
+    setEditStock('');
+    setEditLowStockThreshold('5');
+    setEditIsActive(true);
     setEditImageFile(null);
     if (editImagePreview) {
       URL.revokeObjectURL(editImagePreview);
@@ -227,6 +247,9 @@ export default function DashboardProductsPage() {
         price: Number(editPrice),
         description: editDescription,
         imageUrl,
+        stock: Number(editStock || 0),
+        lowStockThreshold: Number(editLowStockThreshold || 5),
+        isActive: editIsActive,
       };
 
       const res = await fetch(`/api/products/${editingProduct.id}`, {
@@ -294,6 +317,47 @@ export default function DashboardProductsPage() {
                 />
               </div>
 
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="p-stock" className="text-sm font-medium text-gray-700">Stok Tersedia</label>
+                  <Input 
+                    id="p-stock" 
+                    type="number" 
+                    min="0" 
+                    value={stock} 
+                    onChange={(e) => setStock(e.target.value)} 
+                    placeholder="0" 
+                  />
+                </div>
+                <div>
+                  <label htmlFor="p-low-stock" className="text-sm font-medium text-gray-700">Batas Stok Rendah</label>
+                  <Input 
+                    id="p-low-stock" 
+                    type="number" 
+                    min="0" 
+                    value={lowStockThreshold} 
+                    onChange={(e) => setLowStockThreshold(e.target.value)} 
+                    placeholder="5" 
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center space-x-2">
+                  <Switch 
+                    id="p-active" 
+                    checked={isActive}
+                    onCheckedChange={setIsActive}
+                  />
+                  <label htmlFor="p-active" className="text-sm font-medium text-gray-700">
+                    Produk Aktif
+                  </label>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Produk tidak aktif tidak akan ditampilkan di menu pelanggan
+                </p>
+              </div>
+
               <div>
                 <label className="text-sm font-medium text-gray-700 block mb-1">Gambar Produk</label>
                 <div className="flex items-center gap-3">
@@ -348,8 +412,21 @@ export default function DashboardProductsPage() {
                           )}
                         </div>
                         <div>
-                          <div className="font-semibold text-sm">{p.name}</div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="font-semibold text-sm">{p.name}</div>
+                            {p.isActive === false && (
+                              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                                Nonaktif
+                              </span>
+                            )}
+                          </div>
                           <div className="text-xs text-gray-500">{p.category} — Rp {Number(p.price || 0).toLocaleString('id-ID')}</div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <StockQuantity 
+                              stock={p.stock || 0} 
+                              lowStockThreshold={p.lowStockThreshold || 5} 
+                            />
+                          </div>
                           {p.description && (
                             <div className="text-xs text-gray-400 mt-1 line-clamp-2">{p.description}</div>
                           )}
@@ -425,6 +502,47 @@ export default function DashboardProductsPage() {
                       className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-green-500 focus:ring-green-500"
                       placeholder="Paket 3 Porsi pisang ijo frozen lengkap dengan sausnya"
                     />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="edit-stock" className="text-sm font-medium text-gray-700">Stok Tersedia</label>
+                      <Input 
+                        id="edit-stock" 
+                        type="number" 
+                        min="0" 
+                        value={editStock} 
+                        onChange={(e) => setEditStock(e.target.value)} 
+                        placeholder="0" 
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="edit-low-stock" className="text-sm font-medium text-gray-700">Batas Stok Rendah</label>
+                      <Input 
+                        id="edit-low-stock" 
+                        type="number" 
+                        min="0" 
+                        value={editLowStockThreshold} 
+                        onChange={(e) => setEditLowStockThreshold(e.target.value)} 
+                        placeholder="5" 
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <Switch 
+                        id="edit-active" 
+                        checked={editIsActive}
+                        onCheckedChange={setEditIsActive}
+                      />
+                      <label htmlFor="edit-active" className="text-sm font-medium text-gray-700">
+                        Produk Aktif
+                      </label>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Produk tidak aktif tidak akan ditampilkan di menu pelanggan
+                    </p>
                   </div>
 
                   <div>

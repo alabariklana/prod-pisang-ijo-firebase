@@ -8,9 +8,25 @@ let client;
 let db;
 async function connect() {
   if (!MONGO_URL) throw new Error('MONGO_URL not set');
-  if (!client) {
+  
+  // Always try to establish connection if db is not available
+  if (!client || !db) {
+    // Reset client if connection failed previously
+    if (client && !db) {
+      try {
+        await client.close();
+      } catch (e) {
+        console.warn('Error closing previous client:', e.message);
+      }
+      client = null;
+    }
+
     // build options; allow insecure TLS in dev only when explicitly enabled
-    const opts = { serverSelectionTimeoutMS: 5000 };
+    const opts = { 
+      serverSelectionTimeoutMS: 10000,
+      connectTimeoutMS: 10000,
+      maxPoolSize: 10
+    };
     if (process.env.NODE_ENV !== 'production' && process.env.DISABLE_TLS_VERIFY === 'true') {
       opts.tls = true;
       opts.tlsAllowInvalidCertificates = true;
@@ -24,6 +40,9 @@ async function connect() {
       db = client.db(DB_NAME);
       console.info('MongoDB connected, db:', DB_NAME);
     } catch (e) {
+      // Reset variables on error
+      client = null;
+      db = null;
       // tampilkan detail supaya terlihat di terminal dev
       console.error('MongoDB connect error:', e);
       console.error(e?.stack);
@@ -31,14 +50,32 @@ async function connect() {
       throw e;
     }
   }
+
+  if (!db) {
+    throw new Error('Database connection not available');
+  }
+
   return db;
 }
 
 export async function GET() {
   try {
-    const db = await connect();
-    const products = await db.collection('products').find({}).toArray();
-    return NextResponse.json(products, { status: 200 });
+    const database = await connect();
+    if (!database) {
+      throw new Error('Failed to establish database connection');
+    }
+    
+    const products = await database.collection('products').find({}).toArray();
+    
+    // Ensure all products have stock fields for menu display
+    const productsWithStock = products.map(product => ({
+      ...product,
+      stock: Number(product.stock) || 0,
+      lowStockThreshold: Number(product.lowStockThreshold) || 5,
+      isActive: product.isActive !== false // default to true if undefined
+    }));
+    
+    return NextResponse.json(productsWithStock, { status: 200 });
   } catch (err) {
     // lebih detail supaya terlihat di terminal dev
     console.error('GET /api/products error:', err);
@@ -57,7 +94,16 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Bad request: invalid JSON' }, { status: 400 });
     }
 
-    const { name, category, price, description = '', imageUrl = '' } = body;
+    const { 
+      name, 
+      category, 
+      price, 
+      description = '', 
+      imageUrl = '', 
+      stock = 0,
+      lowStockThreshold = 5,
+      isActive = true 
+    } = body;
 
     if (!name || !category || (price === undefined || price === null || price === '')) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -68,13 +114,27 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Invalid price' }, { status: 400 });
     }
 
+    const numericStock = Number(stock);
+    if (Number.isNaN(numericStock) || numericStock < 0) {
+      return NextResponse.json({ error: 'Invalid stock quantity' }, { status: 400 });
+    }
+
+    const numericLowStockThreshold = Number(lowStockThreshold);
+    if (Number.isNaN(numericLowStockThreshold) || numericLowStockThreshold < 0) {
+      return NextResponse.json({ error: 'Invalid low stock threshold' }, { status: 400 });
+    }
+
     const doc = {
       name,
       category,
       price: numericPrice,
       description,
       imageUrl,
-      createdAt: new Date()
+      stock: numericStock,
+      lowStockThreshold: numericLowStockThreshold,
+      isActive: Boolean(isActive),
+      createdAt: new Date(),
+      updatedAt: new Date()
     };
 
     const res = await db.collection('products').insertOne(doc);

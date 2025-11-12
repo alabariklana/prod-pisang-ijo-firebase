@@ -19,15 +19,21 @@ import {
   Mail,
   FileText,
   Settings,
+  AlertTriangle,
+  XCircle,
+  Eye,
+  BarChart3,
   Gift
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { StockStatus } from '@/components/StockStatus';
 
 export default function DashboardHome() {
   const { user, loading, signOut } = useAuth();
   const router = useRouter();
   const [stats, setStats] = useState(null);
+  const [inventoryStats, setInventoryStats] = useState(null);
   const [loadingStats, setLoadingStats] = useState(true);
 
   useEffect(() => {
@@ -40,10 +46,19 @@ export default function DashboardHome() {
 
   const fetchStatistics = async () => {
     try {
-      const res = await fetch('/api/statistics');
-      if (res.ok) {
-        const data = await res.json();
+      const [statsRes, inventoryRes] = await Promise.all([
+        fetch('/api/statistics'),
+        fetch('/api/inventory/stats')
+      ]);
+      
+      if (statsRes.ok) {
+        const data = await statsRes.json();
         setStats(data);
+      }
+      
+      if (inventoryRes.ok) {
+        const inventoryData = await inventoryRes.json();
+        setInventoryStats(inventoryData);
       }
     } catch (error) {
       console.error('Error fetching statistics:', error);
@@ -134,7 +149,7 @@ export default function DashboardHome() {
           </p>
         </div>
 
-        {/* Stats Grid */}
+        {/* Business Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* Total Orders */}
           <Card className="hover:shadow-lg transition">
@@ -194,22 +209,161 @@ export default function DashboardHome() {
           </Link>
 
           {/* Total Products */}
-          <Card className="hover:shadow-lg transition">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                Total Produk
-              </CardTitle>
-              <Package className="w-5 h-5 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-gray-900">
-                {stats?.totalProducts || 0}
+          <Link href="/dashboard/products">
+            <Card className="hover:shadow-lg transition cursor-pointer hover:border-green-500">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600">
+                  Total Produk
+                </CardTitle>
+                <Package className="w-5 h-5 text-green-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-gray-900">
+                  {inventoryStats?.totalProducts || 0}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Klik untuk kelola produk →
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
+
+        {/* Inventory Management Grid */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Manajemen Stok</h2>
+            <Link href="/dashboard/inventory">
+              <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4" />
+                Lihat Detail
+              </Button>
+            </Link>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* In Stock Products */}
+            <Card className="border-l-4 border-l-green-500 hover:shadow-lg transition">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Stok Tersedia</CardTitle>
+                <CheckCircle className="w-5 h-5 text-green-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-700">
+                  {inventoryStats?.inStockProducts || 0}
+                </div>
+                <p className="text-xs text-gray-500">Produk dengan stok cukup</p>
+              </CardContent>
+            </Card>
+
+            {/* Low Stock Products */}
+            <Card className="border-l-4 border-l-yellow-500 hover:shadow-lg transition">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Stok Rendah</CardTitle>
+                <AlertTriangle className="w-5 h-5 text-yellow-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-yellow-700">
+                  {inventoryStats?.lowStockProducts || 0}
+                </div>
+                <p className="text-xs text-gray-500">Perlu direstok segera</p>
+              </CardContent>
+            </Card>
+
+            {/* Out of Stock Products */}
+            <Card className="border-l-4 border-l-red-500 hover:shadow-lg transition">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Stok Habis</CardTitle>
+                <XCircle className="w-5 h-5 text-red-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-700">
+                  {inventoryStats?.outOfStockProducts || 0}
+                </div>
+                <p className="text-xs text-gray-500">Tidak tersedia untuk dijual</p>
+              </CardContent>
+            </Card>
+
+            {/* Active Products */}
+            <Card className="border-l-4 border-l-blue-500 hover:shadow-lg transition">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Produk Aktif</CardTitle>
+                <Eye className="w-5 h-5 text-blue-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-blue-700">
+                  {inventoryStats?.activeProducts || 0}
+                </div>
+                <p className="text-xs text-gray-500">Tampil di menu pelanggan</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Stock Alerts */}
+          {inventoryStats && (inventoryStats.lowStockItems?.length > 0 || inventoryStats.outOfStockItems?.length > 0) && (
+            <div className="mt-6">
+              <h3 className="text-md font-semibold text-gray-900 mb-3">Peringatan Stok</h3>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Out of Stock Alert */}
+                {inventoryStats.outOfStockItems?.length > 0 && (
+                  <Card className="border-red-200 bg-red-50">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium text-red-800 flex items-center gap-2">
+                        <XCircle className="w-4 h-4" />
+                        Produk Habis ({inventoryStats.outOfStockItems.length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="space-y-2 max-h-32 overflow-y-auto">
+                        {inventoryStats.outOfStockItems.slice(0, 3).map((item) => (
+                          <div key={item.id} className="flex justify-between items-center text-xs">
+                            <span className="text-red-700 font-medium">{item.name}</span>
+                            <span className="text-red-600 bg-red-100 px-2 py-1 rounded">
+                              {item.category}
+                            </span>
+                          </div>
+                        ))}
+                        {inventoryStats.outOfStockItems.length > 3 && (
+                          <p className="text-xs text-red-600 text-center pt-1">
+                            +{inventoryStats.outOfStockItems.length - 3} produk lainnya
+                          </p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Low Stock Alert */}
+                {inventoryStats.lowStockItems?.length > 0 && (
+                  <Card className="border-yellow-200 bg-yellow-50">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium text-yellow-800 flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4" />
+                        Stok Rendah ({inventoryStats.lowStockItems.length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="space-y-2 max-h-32 overflow-y-auto">
+                        {inventoryStats.lowStockItems.slice(0, 3).map((item) => (
+                          <div key={item.id} className="flex justify-between items-center text-xs">
+                            <span className="text-yellow-700 font-medium">{item.name}</span>
+                            <span className="text-yellow-600 bg-yellow-100 px-2 py-1 rounded">
+                              {item.stock} tersisa
+                            </span>
+                          </div>
+                        ))}
+                        {inventoryStats.lowStockItems.length > 3 && (
+                          <p className="text-xs text-yellow-600 text-center pt-1">
+                            +{inventoryStats.lowStockItems.length - 3} produk lainnya
+                          </p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Produk aktif
-              </p>
-            </CardContent>
-          </Card>
+            </div>
+          )}
         </div>
 
         {/* Order Status Summary */}
@@ -261,57 +415,66 @@ export default function DashboardHome() {
             <CardDescription>Kelola bisnis Anda dengan mudah</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-              <Link href="/dashboard/hero-slides" className="block">
-                <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-blue-300 hover:bg-blue-50">
-                  <Settings className="w-6 h-6 text-blue-600" />
-                  <span className="text-sm text-blue-700 font-medium">Hero Slides</span>
-                </Button>
-              </Link>
-              <Link href="/dashboard/products" className="block">
-                <Button variant="outline" className="w-full h-20 flex flex-col gap-2">
-                  <Package className="w-6 h-6" />
-                  <span className="text-sm">Kelola Produk</span>
-                </Button>
-              </Link>
-              <Link href="/dashboard/orders" className="block">
-                <Button variant="outline" className="w-full h-20 flex flex-col gap-2">
-                  <ShoppingCart className="w-6 h-6" />
-                  <span className="text-sm">Lihat Pesanan</span>
-                </Button>
-              </Link>
-              <Link href="/dashboard/members" className="block">
-                <Button variant="outline" className="w-full h-20 flex flex-col gap-2">
-                  <Users className="w-6 h-6" />
-                  <span className="text-sm">Kelola Member</span>
-                </Button>
-              </Link>
-              <Link href="/dashboard/blog" className="block">
-                <Button variant="outline" className="w-full h-20 flex flex-col gap-2">
-                  <FileText className="w-6 h-6" />
-                  <span className="text-sm">Blog</span>
-                </Button>
-              </Link>
-              <Link href="/dashboard/newsletter" className="block">
-                <Button variant="outline" className="w-full h-20 flex flex-col gap-2">
-                  <Mail className="w-6 h-6" />
-                  <span className="text-sm">Newsletter</span>
-                </Button>
-              </Link>
-              <Link href="/shipping" className="block">
-                <Button variant="outline" className="w-full h-20 flex flex-col gap-2">
-                  <Truck className="w-6 h-6" />
-                  <span className="text-sm">Ongkir & Tracking</span>
-                </Button>
-              </Link>
+            {/* Primary Actions */}
+            <div className="mb-6">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">Manajemen Utama</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Link href="/dashboard/products" className="block">
+                  <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-green-300 hover:bg-green-50">
+                    <Package className="w-6 h-6 text-green-600" />
+                    <span className="text-sm text-green-700 font-medium">Kelola Produk</span>
+                  </Button>
+                </Link>
+                <Link href="/dashboard/inventory" className="block">
+                  <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-blue-300 hover:bg-blue-50">
+                    <BarChart3 className="w-6 h-6 text-blue-600" />
+                    <span className="text-sm text-blue-700 font-medium">Manajemen Stok</span>
+                  </Button>
+                </Link>
+                <Link href="/dashboard/orders" className="block">
+                  <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-purple-300 hover:bg-purple-50">
+                    <ShoppingCart className="w-6 h-6 text-purple-600" />
+                    <span className="text-sm text-purple-700 font-medium">Lihat Pesanan</span>
+                  </Button>
+                </Link>
+                <Link href="/dashboard/members" className="block">
+                  <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-orange-300 hover:bg-orange-50">
+                    <Users className="w-6 h-6 text-orange-600" />
+                    <span className="text-sm text-orange-700 font-medium">Kelola Member</span>
+                  </Button>
+                </Link>
+              </div>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mt-4">
-              <Link href="/dashboard/settings" className="block">
-                <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-green-300 hover:bg-green-50">
-                  <Gift className="w-6 h-6 text-green-600" />
-                  <span className="text-sm text-green-700 font-medium">Promo & Poin</span>
-                </Button>
-              </Link>
+
+            {/* Secondary Actions */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">Pengaturan & Lainnya</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Link href="/dashboard/hero-slides" className="block">
+                  <Button variant="outline" className="w-full h-16 flex flex-col gap-1">
+                    <Settings className="w-5 h-5 text-gray-600" />
+                    <span className="text-xs text-gray-700">Hero Slides</span>
+                  </Button>
+                </Link>
+                <Link href="/dashboard/blog" className="block">
+                  <Button variant="outline" className="w-full h-16 flex flex-col gap-1">
+                    <FileText className="w-5 h-5 text-gray-600" />
+                    <span className="text-xs text-gray-700">Blog</span>
+                  </Button>
+                </Link>
+                <Link href="/dashboard/newsletter" className="block">
+                  <Button variant="outline" className="w-full h-16 flex flex-col gap-1">
+                    <Mail className="w-5 h-5 text-gray-600" />
+                    <span className="text-xs text-gray-700">Newsletter</span>
+                  </Button>
+                </Link>
+                <Link href="/shipping" className="block">
+                  <Button variant="outline" className="w-full h-16 flex flex-col gap-1">
+                    <Truck className="w-5 h-5 text-gray-600" />
+                    <span className="text-xs text-gray-700">Ongkir & Tracking</span>
+                  </Button>
+                </Link>
+              </div>
             </div>
           </CardContent>
         </Card>

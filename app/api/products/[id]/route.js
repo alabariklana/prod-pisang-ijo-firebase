@@ -57,6 +57,17 @@ export async function PUT(request, { params }) {
       );
     }
 
+    // Validate stock fields
+    const numericStock = Number(body.stock || 0);
+    if (Number.isNaN(numericStock) || numericStock < 0) {
+      return NextResponse.json({ error: 'Invalid stock quantity' }, { status: 400 });
+    }
+
+    const numericLowStockThreshold = Number(body.lowStockThreshold || 5);
+    if (Number.isNaN(numericLowStockThreshold) || numericLowStockThreshold < 0) {
+      return NextResponse.json({ error: 'Invalid low stock threshold' }, { status: 400 });
+    }
+
     const db = await connect();
     const query = ObjectId.isValid(id) ? { _id: new ObjectId(id) } : { id };
     
@@ -66,6 +77,9 @@ export async function PUT(request, { params }) {
       price: Number(body.price),
       description: body.description || '',
       imageUrl: body.imageUrl || '',
+      stock: numericStock,
+      lowStockThreshold: numericLowStockThreshold,
+      isActive: Boolean(body.isActive !== undefined ? body.isActive : true),
       updatedAt: new Date(),
     };
 
