@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
-import { verifyXenditWebhook } from '@/lib/xendit';
+import { validateWebhookSignature } from '@/lib/xendit';
 
 export async function POST(request) {
   try {
@@ -8,7 +8,8 @@ export async function POST(request) {
     const headers = request.headers;
 
     // Verify webhook signature
-    const isValidWebhook = verifyXenditWebhook(body, headers);
+    const signature = headers.get('x-callback-token');
+    const isValidWebhook = validateWebhookSignature(body, signature);
     
     if (!isValidWebhook) {
       console.error('Invalid webhook signature');
