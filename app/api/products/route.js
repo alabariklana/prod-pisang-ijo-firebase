@@ -1,148 +1,128 @@
-import { NextResponse } from 'next/server';
-import { MongoClient } from 'mongodb';
+import { withDatabase } from '@/lib/mongodb';
+import { 
+  ApiResponse, 
+  handleApiError, 
+  validateRequiredFields, 
+  validateNumber, 
+  sanitizeString 
+} from '@/lib/api-utils';
+import { config } from '@/lib/config';
 
-const MONGO_URL = process.env.MONGO_URL;
-const DB_NAME = process.env.DB_NAME || 'pisangijo';
-
-let client;
-let db;
-async function connect() {
-  if (!MONGO_URL) throw new Error('MONGO_URL not set');
-  
-  // Always try to establish connection if db is not available
-  if (!client || !db) {
-    // Reset client if connection failed previously
-    if (client && !db) {
-      try {
-        await client.close();
-      } catch (e) {
-        console.warn('Error closing previous client:', e.message);
-      }
-      client = null;
-    }
-
-    // build options; allow insecure TLS in dev only when explicitly enabled
-    const opts = { 
-      serverSelectionTimeoutMS: 10000,
-      connectTimeoutMS: 10000,
-      maxPoolSize: 10
-    };
-    if (process.env.NODE_ENV !== 'production' && process.env.DISABLE_TLS_VERIFY === 'true') {
-      opts.tls = true;
-      opts.tlsAllowInvalidCertificates = true;
-      console.warn('WARNING: TLS verification disabled for MongoDB (DISABLE_TLS_VERIFY=true). Use only in development.');
-    }
-
-    try {
-      console.info('Connecting to MongoDB...', MONGO_URL?.startsWith('mongodb+srv') ? 'using SRV' : 'using standard URI');
-      client = new MongoClient(MONGO_URL, opts);
-      await client.connect();
-      db = client.db(DB_NAME);
-      console.info('MongoDB connected, db:', DB_NAME);
-    } catch (e) {
-      // Reset variables on error
-      client = null;
-      db = null;
-      // tampilkan detail supaya terlihat di terminal dev
-      console.error('MongoDB connect error:', e);
-      console.error(e?.stack);
-      // rethrow supaya route handler bisa merespon 500 dengan detail
-      throw e;
-    }
-  }
-
-  if (!db) {
-    throw new Error('Database connection not available');
-  }
-
-  return db;
-}
-
-export async function GET() {
+/**
+ * Get all products with stock information
+ * @param {Request} request - HTTP request
+ * @returns {Promise<NextResponse>} Products list response
+ */
+export async function GET(request) {
   try {
-    const database = await connect();
-    if (!database) {
-      throw new Error('Failed to establish database connection');
-    }
-    
-    const products = await database.collection('products').find({}).toArray();
-    
-    // Ensure all products have stock fields for menu display
-    const productsWithStock = products.map(product => ({
-      ...product,
-      stock: Number(product.stock) || 0,
-      lowStockThreshold: Number(product.lowStockThreshold) || 5,
-      isActive: product.isActive !== false // default to true if undefined
-    }));
-    
-    return NextResponse.json(productsWithStock, { status: 200 });
-  } catch (err) {
-    // lebih detail supaya terlihat di terminal dev
-    console.error('GET /api/products error:', err);
-    console.error(err.stack);
-    return NextResponse.json({ error: 'Gagal memuat produk', detail: err?.message ?? null }, { status: 500 });
+    const { searchParams } = new URL(request.url);
+    const isActiveOnly = searchParams.get('active') === 'true';
+    const category = searchParams.get('category');
+
+    return await withDatabase(async (db) => {
+      // Build query filters
+      const query = {};
+      if (isActiveOnly) {
+        query.isActive = true;
+      }
+      if (category) {
+        query.category = category;
+      }
+
+      const products = await db.collection('products')
+        .find(query)
+        .sort({ createdAt: -1 })
+        .toArray();
+      
+      // Normalize product data with stock information
+      const normalizedProducts = products.map(product => ({
+        ...product,
+        _id: product._id.toString(),
+        stock: validateNumber(product.stock, 'stock', { required: false, default: 0 }),
+        lowStockThreshold: validateNumber(product.lowStockThreshold, 'lowStockThreshold', { 
+          required: false, 
+          default: config.business.lowStockThreshold 
+        }),
+        isActive: product.isActive !== false,
+        price: validateNumber(product.price, 'price', { required: false, default: 0 }),
+        // Add computed fields
+        isLowStock: (product.stock || 0) <= (product.lowStockThreshold || config.business.lowStockThreshold),
+        isOutOfStock: (product.stock || 0) === 0
+      }));
+      
+      return ApiResponse.success(normalizedProducts, 'Products retrieved successfully');
+    });
+  } catch (error) {
+    return handleApiError(error, 'GET /api/products');
   }
 }
 
+/**
+ * Create a new product
+ * @param {Request} request - HTTP request with product data
+ * @returns {Promise<NextResponse>} Created product response
+ */
 export async function POST(request) {
   try {
-    const db = await connect();
-
-    // request body harus JSON dari client
     const body = await request.json().catch(() => null);
     if (!body) {
-      return NextResponse.json({ error: 'Bad request: invalid JSON' }, { status: 400 });
+      return ApiResponse.validationError('Invalid JSON in request body');
     }
 
-    const { 
-      name, 
-      category, 
-      price, 
-      description = '', 
-      imageUrl = '', 
-      stock = 0,
-      lowStockThreshold = 5,
-      isActive = true 
-    } = body;
+    // Validate required fields
+    validateRequiredFields(body, ['name', 'category', 'price']);
 
-    if (!name || !category || (price === undefined || price === null || price === '')) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-    }
-
-    const numericPrice = Number(price);
-    if (Number.isNaN(numericPrice)) {
-      return NextResponse.json({ error: 'Invalid price' }, { status: 400 });
-    }
-
-    const numericStock = Number(stock);
-    if (Number.isNaN(numericStock) || numericStock < 0) {
-      return NextResponse.json({ error: 'Invalid stock quantity' }, { status: 400 });
-    }
-
-    const numericLowStockThreshold = Number(lowStockThreshold);
-    if (Number.isNaN(numericLowStockThreshold) || numericLowStockThreshold < 0) {
-      return NextResponse.json({ error: 'Invalid low stock threshold' }, { status: 400 });
-    }
-
-    const doc = {
-      name,
-      category,
-      price: numericPrice,
-      description,
-      imageUrl,
-      stock: numericStock,
-      lowStockThreshold: numericLowStockThreshold,
-      isActive: Boolean(isActive),
+    // Extract and validate data
+    const productData = {
+      name: sanitizeString(body.name, { trim: true, maxLength: 200, minLength: 2 }),
+      category: sanitizeString(body.category, { trim: true, maxLength: 100 }),
+      price: validateNumber(body.price, 'price', { min: 0, max: 10000000 }),
+      description: sanitizeString(body.description || '', { trim: true, maxLength: 1000 }),
+      imageUrl: sanitizeString(body.imageUrl || '', { trim: true, maxLength: 500 }),
+      stock: validateNumber(body.stock || 0, 'stock', { min: 0, max: 100000, required: false }),
+      lowStockThreshold: validateNumber(
+        body.lowStockThreshold || config.business.lowStockThreshold, 
+        'lowStockThreshold', 
+        { min: 0, max: 1000, required: false }
+      ),
+      isActive: Boolean(body.isActive !== false),
       createdAt: new Date(),
       updatedAt: new Date()
     };
 
-    const res = await db.collection('products').insertOne(doc);
-    return NextResponse.json({ ok: true, id: res.insertedId.toString() }, { status: 201 });
-  } catch (err) {
-    // lebih detail supaya terlihat di terminal dev
-    console.error('POST /api/products error:', err);
-    console.error(err.stack);
-    return NextResponse.json({ error: 'Gagal menyimpan produk', detail: err?.message ?? null }, { status: 500 });
+    // Additional business validations
+    if (productData.lowStockThreshold > productData.stock) {
+      return ApiResponse.validationError('Low stock threshold cannot be greater than current stock');
+    }
+
+    return await withDatabase(async (db) => {
+      // Check for duplicate product names
+      const existingProduct = await db.collection('products').findOne({
+        name: { $regex: new RegExp(`^${productData.name}$`, 'i') }
+      });
+
+      if (existingProduct) {
+        return ApiResponse.validationError('Product with this name already exists');
+      }
+
+      // Insert new product
+      const result = await db.collection('products').insertOne(productData);
+
+      // Fetch the created product with proper formatting
+      const createdProduct = await db.collection('products').findOne({
+        _id: result.insertedId
+      });
+
+      return ApiResponse.success(
+        {
+          ...createdProduct,
+          _id: createdProduct._id.toString()
+        },
+        'Product created successfully',
+        201
+      );
+    });
+  } catch (error) {
+    return handleApiError(error, 'POST /api/products');
   }
 }

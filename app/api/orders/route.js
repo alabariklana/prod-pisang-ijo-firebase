@@ -1,81 +1,205 @@
-import { NextResponse } from 'next/server';
-import { MongoClient } from 'mongodb';
+import { ApiResponse, handleApiError, validateRequiredFields } from '@/lib/api-utils';
+import { withDatabase } from '@/lib/mongodb';
 
-const MONGO_URL = process.env.MONGO_URL;
-const DB_NAME = process.env.DB_NAME || 'pisangijo';
-
-let client;
-let db;
-async function connect() {
-  if (!MONGO_URL) throw new Error('MONGO_URL not set');
-  if (!client) {
-    client = new MongoClient(MONGO_URL, { serverSelectionTimeoutMS: 5000 });
-    await client.connect();
-    db = client.db(DB_NAME);
-  }
-  return db;
-}
-
+/**
+ * GET /api/orders - Fetch all orders with pagination support
+ */
 export async function GET(request) {
-  try {
-    const db = await connect();
-    
-    // Fetch all orders, sorted by creation date (newest first)
-    const orders = await db.collection('orders')
-      .find({})
-      .sort({ createdAt: -1 })
-      .toArray();
+  return withDatabase(async (db) => {
+    try {
+      const { searchParams } = new URL(request.url);
+      const page = parseInt(searchParams.get('page')) || 1;
+      const limit = parseInt(searchParams.get('limit')) || 20;
+      const status = searchParams.get('status');
+      const sort = searchParams.get('sort') || 'createdAt';
+      const order = searchParams.get('order') === 'asc' ? 1 : -1;
 
-    // Convert MongoDB _id to string for JSON serialization
-    const ordersWithId = orders.map(order => ({
-      ...order,
-      _id: order._id.toString(),
-      id: order._id.toString()
-    }));
+      // Build filter
+      const filter = {};
+      if (status && status !== 'all') {
+        filter.status = status;
+      }
 
-    return NextResponse.json(ordersWithId, { status: 200 });
-  } catch (err) {
-    console.error('GET /api/orders error:', err);
-    return NextResponse.json({ error: 'Gagal memuat pesanan', detail: err?.message ?? null }, { status: 500 });
-  }
+      // Build sort
+      const sortObj = {};
+      sortObj[sort] = order;
+
+      const skip = (page - 1) * limit;
+
+      // Execute query with pagination
+      const [orders, total] = await Promise.all([
+        db.collection('orders')
+          .find(filter)
+          .sort(sortObj)
+          .skip(skip)
+          .limit(limit)
+          .toArray(),
+        db.collection('orders').countDocuments(filter)
+      ]);
+
+      // Convert MongoDB _id to string for JSON serialization
+      const ordersWithId = orders.map(order => ({
+        ...order,
+        _id: order._id.toString(),
+        id: order._id.toString()
+      }));
+
+      const pagination = {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+        hasNext: page < Math.ceil(total / limit),
+        hasPrev: page > 1
+      };
+
+      return ApiResponse.success({
+        orders: ordersWithId,
+        pagination
+      }, 'Pesanan berhasil dimuat');
+
+    } catch (error) {
+      return handleApiError(error, 'Gagal memuat pesanan');
+    }
+  });
 }
 
-export async function POST(request) {
-  try {
-    const body = await request.json().catch(() => null);
-    if (!body) return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+/**
+ * Generate unique order number
+ * @returns {string} Unique order number
+ */
+function generateOrderNumber() {
+  const timestamp = Date.now();
+  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return `ORD-${timestamp}-${random}`;
+}
 
-    const { customerName, customerEmail, customerPhone, customerAddress, items, subtotal, shippingCost, totalAmount, shipping, notes } = body;
+/**
+ * Validate order items
+ * @param {Array} items - Order items array
+ * @returns {Object} Validation result
+ */
+function validateOrderItems(items) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return { valid: false, error: 'Items harus berupa array dan tidak boleh kosong' };
+  }
 
-    if (!customerName || !customerEmail || !customerPhone || !customerAddress || !Array.isArray(items) || items.length === 0) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+  for (const item of items) {
+    const requiredItemFields = ['productId', 'name', 'quantity', 'price'];
+    const validation = validateRequiredFields(item, requiredItemFields);
+    if (!validation.valid) {
+      return { valid: false, error: `Item tidak valid: ${validation.error}` };
     }
 
-    const db = await connect();
+    if (Number(item.quantity) <= 0) {
+      return { valid: false, error: 'Quantity item harus lebih dari 0' };
+    }
 
-    const orderNumber = `ORD-${Date.now()}`;
-    const doc = {
-      orderNumber,
-      customerName,
-      customerEmail,
-      customerPhone,
-      customerAddress,
-      items,
-      subtotal: Number(subtotal) || 0,
-      shippingCost: Number(shippingCost) || 0,
-      totalAmount: Number(totalAmount) || 0,
-      shipping: shipping || null,
-      notes: notes || '',
-      status: 'pending',
-      trackingNumber: null, // Will be filled when item is shipped
-      createdAt: new Date()
-    };
-
-    const res = await db.collection('orders').insertOne(doc);
-
-    return NextResponse.json({ ok: true, orderId: res.insertedId.toString(), orderNumber }, { status: 201 });
-  } catch (err) {
-    console.error('POST /api/orders error:', err);
-    return NextResponse.json({ error: 'Gagal membuat pesanan', detail: err?.message ?? null }, { status: 500 });
+    if (Number(item.price) <= 0) {
+      return { valid: false, error: 'Harga item harus lebih dari 0' };
+    }
   }
+
+  return { valid: true };
+}
+
+/**
+ * POST /api/orders - Create a new order
+ */
+export async function POST(request) {
+  return withDatabase(async (db) => {
+    try {
+      const body = await request.json().catch(() => null);
+      if (!body) {
+        return ApiResponse.error('Invalid JSON format', 400);
+      }
+
+      const { 
+        customerName, 
+        customerEmail, 
+        customerPhone, 
+        customerAddress, 
+        items, 
+        subtotal, 
+        shippingCost, 
+        totalAmount, 
+        shipping, 
+        notes 
+      } = body;
+
+      // Validate required fields
+      const requiredFields = {
+        customerName,
+        customerEmail,
+        customerPhone,
+        customerAddress,
+        items,
+        subtotal,
+        totalAmount
+      };
+
+      const fieldValidation = validateRequiredFields(requiredFields, Object.keys(requiredFields));
+      if (!fieldValidation.valid) {
+        return ApiResponse.error(fieldValidation.error, 400);
+      }
+
+      // Validate items
+      const itemsValidation = validateOrderItems(items);
+      if (!itemsValidation.valid) {
+        return ApiResponse.error(itemsValidation.error, 400);
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(customerEmail)) {
+        return ApiResponse.error('Format email tidak valid', 400);
+      }
+
+      // Calculate total to verify
+      const calculatedSubtotal = items.reduce((sum, item) => sum + (Number(item.price) * Number(item.quantity)), 0);
+      const calculatedTotal = calculatedSubtotal + Number(shippingCost || 0);
+
+      if (Math.abs(calculatedTotal - Number(totalAmount)) > 0.01) {
+        return ApiResponse.error('Total amount tidak sesuai dengan perhitungan', 400);
+      }
+
+      const orderNumber = generateOrderNumber();
+      const orderDoc = {
+        orderNumber,
+        customerName: String(customerName).trim(),
+        customerEmail: String(customerEmail).trim().toLowerCase(),
+        customerPhone: String(customerPhone).trim(),
+        customerAddress: String(customerAddress).trim(),
+        items: items.map(item => ({
+          productId: String(item.productId),
+          name: String(item.name).trim(),
+          quantity: Number(item.quantity),
+          price: Number(item.price),
+          total: Number(item.quantity) * Number(item.price)
+        })),
+        subtotal: Number(subtotal),
+        shippingCost: Number(shippingCost || 0),
+        totalAmount: Number(totalAmount),
+        shipping: shipping || null,
+        notes: notes ? String(notes).trim() : '',
+        status: 'pending',
+        paymentStatus: 'unpaid',
+        trackingNumber: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      const result = await db.collection('orders').insertOne(orderDoc);
+
+      return ApiResponse.success({
+        orderId: result.insertedId.toString(),
+        orderNumber,
+        status: 'pending',
+        paymentStatus: 'unpaid'
+      }, 'Pesanan berhasil dibuat', 201);
+
+    } catch (error) {
+      return handleApiError(error, 'Gagal membuat pesanan');
+    }
+  });
 }
